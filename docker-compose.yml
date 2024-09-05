@@ -1,0 +1,79 @@
+services:
+  postgres:
+    image: postgres
+    container_name: postgres
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    restart: always
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    restart: always # Restarts RabbitMQ if it stops
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 30s
+      retries: 3
+
+  auth:
+    build:
+      context: ./auth
+    container_name: auth
+    # command: ["tail", "-f", "/dev/null"]
+    command: sh -c "python main.py"
+    restart: always
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./auth:/app
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  gateway:
+    restart: always
+    build:
+      context: ./gateway
+    container_name: gateway
+    # command: ["tail", "-f", "/dev/null"]
+    command: sh -c "python main.py"
+    volumes:
+      - ./gateway:/app
+    ports:
+      - "5001:5001"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  ml_services:
+    restart: always
+    build:
+      context: ./ml_services
+    container_name: ml_services
+    # command: ["tail", "-f", "/dev/null"]
+    command: sh -c "python main.py"
+    volumes:
+      - ./ml_services:/app
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  notification_service:
+    restart: always
+    build:
+      context: ./notification_service
+    container_name: notification_service
+    # command: ["tail", "-f", "/dev/null"]
+    command: sh -c "python main.py"
+    volumes:
+      - ./notification_service:/app
+    depends_on:
+      - auth
