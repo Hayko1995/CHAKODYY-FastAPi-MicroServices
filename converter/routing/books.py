@@ -46,6 +46,5 @@ async def get_all_books(
     description="Redis",
 )
 async def getRedis(service: RedisService = Depends(get_redis_service)):
-    print("aaaaaaaaaa")
     value = await service.get_value("my_key")
     return {"result": value}

@@ -20,19 +20,13 @@ class BookService:
 
 
 class RedisService:
-    def __init__(self, repository: RedisRepository) -> None:
+    def __init__(self, repository: RedisRepository, connection) -> None:
         self.repository = repository
-
-    async def connect_to_redis(self):
-        connection = await asyncio_redis.Connection.create(
-            host="redis", password="password", port=6379
-        )
-        return connection
+        self.connection = connection
 
     async def get_value(self, key) -> List[dict]:
-        connection = await self.connect_to_redis()
+        connection = await self.connection
         return await connection.get(key)
-        return "aaaa"
 
     def get_keys(self, key) -> List[dict]:
         raise NotImplemented

@@ -16,7 +16,6 @@ def main():
     channel = connection.channel()
 
     def callback(ch, method, properties, body):
-        print("🐍 File: notification_service/main.py | Line: 19 | main ~ body",body)
         try:
             err = email_service.notification(body)
             if err:
