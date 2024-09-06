@@ -2,11 +2,10 @@ from typing import List
 
 from fastapi import APIRouter, Depends
 
-from services.redis import RedisService
-from depends import get_book_service
-from depends import Container
+
+from depends import get_book_service, get_redis_service
 from schemas.books import Book
-from services.books import BookService
+from services.books import BookService, RedisService
 from fastapi import FastAPI, Depends
 from dependency_injector import containers, providers
 from dependency_injector.wiring import Provide, inject
@@ -46,13 +45,7 @@ async def get_all_books(
     responses={400: {"description": "Bad request"}},
     description="Redis",
 )
-@inject
-async def getRedis(service: RedisService = Depends(Provide[Container.service])):
-    value = await service.process()
+async def getRedis(service: RedisService = Depends(get_redis_service)):
+    print("aaaaaaaaaa")
+    value = await service.get_value("my_key")
     return {"result": value}
-
-
-container = Container()
-container.config.redis_host.from_env("REDIS_HOST", "redis")
-container.config.redis_password.from_env("REDIS_PASSWORD", "password")
-container.wire(modules=[__name__])

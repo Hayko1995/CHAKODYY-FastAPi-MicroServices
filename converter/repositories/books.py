@@ -10,3 +10,15 @@ class BookRepository:
 
     def create_book(self) -> Book:
         raise NotImplemented
+
+
+class RedisRepository:
+
+    def get_value(self, key) -> List[dict]:
+        raise NotImplemented
+
+    def get_keys(self, key) -> List[dict]:
+        raise NotImplemented
+
+    def set_value(self) -> None:
+        raise NotImplemented

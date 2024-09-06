@@ -5,3 +5,4 @@ fastapi
 dependency_injector
 uvicorn
 redis
+asyncio_redis
