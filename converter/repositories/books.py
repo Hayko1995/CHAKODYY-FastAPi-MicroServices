@@ -1,6 +1,6 @@
 from typing import List
 
-from schemas.books import Book
+from schemas.schema import Book
 
 
 class BookRepository:
@@ -9,6 +9,15 @@ class BookRepository:
         raise NotImplemented
 
     def create_book(self) -> Book:
+        raise NotImplemented
+
+
+class ConvertRepository:
+
+    def convert_coin(self) -> List[Book]:
+        raise NotImplemented
+
+    def buy_coin(self) -> Book:
         raise NotImplemented
 
 

@@ -6,3 +6,16 @@ dependency_injector
 uvicorn
 redis
 asyncio_redis
+passlib
+cryptography
+email-validator
+fastapi
+psycopg2-binary
+pydantic
+pydantic_core
+PyJWT
+SQLAlchemy
+python-dotenv
+uvicorn
+python-multipart
+pika

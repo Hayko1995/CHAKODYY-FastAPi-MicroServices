@@ -16,3 +16,12 @@ class Book(BaseModel):
     author: Author
     
 
+class ConvertRequest(BaseModel):
+    from_coin: str
+    to_coin: str
+    count_coin: str
+    price_coin: str
+
+class BuyRequest(BaseModel):
+    coinmname: str
+    count: str

@@ -1,8 +1,10 @@
 import json
+import logging
 import threading
 import websocket
 from fastapi import FastAPI, BackgroundTasks
 from abc import ABC
+from db import models as _models
 
 from services.transactions import Transaction
 from routing.books import router as books_routing
@@ -10,6 +12,8 @@ from routing.books import router as books_routing
 
 app = FastAPI(openapi_url="/core/openapi.json", docs_url="/docs")
 app.include_router(books_routing)
+logging.basicConfig(level=logging.INFO)
+_models.Base.metadata.create_all(_models.engine)
 
 
 @app.on_event("startup")

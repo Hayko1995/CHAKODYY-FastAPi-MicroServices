@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends
 
 
 from depends import get_book_service, get_redis_service
-from schemas.books import Book
-from services.books import BookService, RedisService
+from schemas.schema import Book, BuyRequest, ConvertRequest
+from services.convert import BookService, RedisService
 from fastapi import FastAPI, Depends
 from dependency_injector import containers, providers
 from dependency_injector.wiring import Provide, inject
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api", tags=["coins"])
 
 
 @router.get(
-    "buy", responses={400: {"description": "Bad request"}}, response_model=List[Book]
+    "buy", responses={400: {"description": "Bad request"}}, 
 )
 async def get_all_books(
     book_service: BookService = Depends(get_book_service),

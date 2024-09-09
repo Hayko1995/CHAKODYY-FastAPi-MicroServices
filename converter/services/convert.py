@@ -1,7 +1,7 @@
 from typing import List
 
-from repositories.books import BookRepository, RedisRepository
-from schemas.books import Book
+from repositories.books import BookRepository, ConvertRepository, RedisRepository
+from schemas.schema import Book
 import asyncio_redis
 
 
@@ -16,6 +16,19 @@ class BookService:
 
     def create_book(self) -> Book:
         result = self.repository.create_book()
+        return result
+
+
+class ConvertService:
+    def __init__(self, repository: ConvertRepository) -> None:
+        self.repository = repository
+
+    def convert_coin(self) -> List[Book]:
+        result = self.repository.convert_coin()
+        return result
+
+    def buy_coin(self) -> Book:
+        result = self.repository.buy_coin()
         return result
 
 
