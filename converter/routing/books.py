@@ -11,14 +11,11 @@ from dependency_injector import containers, providers
 from dependency_injector.wiring import Provide, inject
 
 
-router = APIRouter(prefix="/books", tags=["books"])
+router = APIRouter(prefix="/api", tags=["coins"])
 
 
 @router.get(
-    "",
-    responses={400: {"description": "Bad request"}},
-    response_model=List[Book],
-    description="Получение листинга всех книг",
+    "buy", responses={400: {"description": "Bad request"}}, response_model=List[Book]
 )
 async def get_all_books(
     book_service: BookService = Depends(get_book_service),
@@ -28,7 +25,7 @@ async def get_all_books(
 
 
 @router.post(
-    "",
+    "convert",
     responses={400: {"description": "Bad request"}},
     response_model=Book,
     description="Создание книги",
