@@ -1,3 +1,5 @@
+import uuid
+
 from datetime import datetime
 from pydantic import BaseModel
 
@@ -21,6 +23,11 @@ class ConvertRequest(BaseModel):
     to_coin: str
     count_coin: str
     price_coin: str
+    
+class BuyCoin(BaseModel):
+    coin_uuid: uuid.uuid4
+    coin_name: str
+    coin_count: float
 
 class BuyRequest(BaseModel):
     coin_name: str

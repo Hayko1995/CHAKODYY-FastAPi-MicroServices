@@ -17,7 +17,7 @@ class ConvertRepository:
     def convert_coin(self) -> List[Book]:
         raise NotImplemented
 
-    async def buy_coin(self) -> bool:
+    async def buy_coin(self) -> dict:
         raise NotImplemented
 
 

@@ -12,14 +12,14 @@ Base.metadata.create_all(engine)
 
 
 class CoinAccount(_database.Base):
-    __tablename__ = "coin_accaunt"
+    __tablename__ = "coin_account"
 
-    id = _sql.Column(_sql.Integer, primary_key=True, index=True)
-    name = relationship("Profile", back_populates="convert", uselist=False)
-    coin_id = _sql.Column(
-        UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False
+    # id = _sql.Column(_sql.Integer, primary_key=True, index=True)
+    uuid =  _sql.Column(
+        UUID(as_uuid=True), default=uuid.uuid4, primary_key=True, index=True
     )
-    count = _sql.Column(_sql.Integer, default=0)
+    name = _sql.Column(_sql.String, nullable=False)
+    count = _sql.Column(_sql.Float, nullable=False)
 
 
 class Convert(_database.Base):

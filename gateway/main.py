@@ -16,6 +16,9 @@ import rpc_client
 app = FastAPI()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+@app.get("/items/")
+async def read_items(token: str = Depends(oauth2_scheme)):
+    return {"token": token}
 # Load environment variables
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -81,6 +84,9 @@ class VerifyOtp(BaseModel):
     email: str
     otp: int
 
+class Token(BaseModel):
+    access_token: str
+    token_type: str
 
 async def login_auth(data):
     try:
@@ -89,7 +95,8 @@ async def login_auth(data):
             json={"username": data.username, "password": data.password},
         )
         if response.status_code == 200:
-            return response.json()
+            print(response.json())
+            return Token(access_token=response.json()["access_token"], token_type="bearer")
         else:
             raise HTTPException(
                 status_code=response.status_code, detail=response.json()

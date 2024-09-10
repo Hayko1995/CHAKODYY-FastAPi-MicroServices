@@ -1,7 +1,7 @@
 from typing import List
 
 from repositories.books import BookRepository, ConvertRepository, RedisRepository
-from schemas.schema import Book
+from schemas.schema import Book, BuyCoin
 import asyncio_redis
 
 
@@ -27,8 +27,8 @@ class ConvertService:
         result = self.repository.convert_coin()
         return result
 
-    async def buy_coin(self, coin_name, coin_count) -> Book:
-        result =  await self.repository.buy_coin(coin_name, coin_count)
+    async def buy_coin(self, coin_uuid, coin_name, coin_count) -> BuyCoin:
+        result =  await self.repository.buy_coin(coin_uuid, coin_name, coin_count)
         return result
 
 
