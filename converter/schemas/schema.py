@@ -23,5 +23,5 @@ class ConvertRequest(BaseModel):
     price_coin: str
 
 class BuyRequest(BaseModel):
-    coinmname: str
-    count: str
+    coin_name: str
+    coin_count: float

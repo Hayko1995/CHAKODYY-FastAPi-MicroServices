@@ -11,20 +11,25 @@ from sqlalchemy.orm import relationship
 Base.metadata.create_all(engine)
 
 
-class Coin(_database.Base):
-    __tablename__ = "coin"
+class CoinAccount(_database.Base):
+    __tablename__ = "coin_accaunt"
 
     id = _sql.Column(_sql.Integer, primary_key=True, index=True)
-    user_id = relationship("Profile", back_populates="user", uselist=False)
-    coin_name = relationship("Profile", back_populates="convert", uselist=False)
-    coin_id = _sql.Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
-
+    name = relationship("Profile", back_populates="convert", uselist=False)
+    coin_id = _sql.Column(
+        UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False
+    )
+    count = _sql.Column(_sql.Integer, default=0)
 
 
 class Convert(_database.Base):
     __tablename__ = "convert"
 
     id = _sql.Column(_sql.Integer, primary_key=True, index=True)
-    coin_from = relationship("Coin", back_populates="user", uselist=False)
-    coin_to = relationship("Coin", back_populates="convert", uselist=False)
+    coin_from = _sql.Column(
+        UUID(as_uuid=True), default=uuid.uuid4, unique=False, nullable=False
+    )
+    coin_to = _sql.Column(
+        UUID(as_uuid=True), default=uuid.uuid4, unique=False, nullable=False
+    )
     count = _sql.Column(_sql.Integer)

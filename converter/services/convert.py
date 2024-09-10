@@ -27,8 +27,8 @@ class ConvertService:
         result = self.repository.convert_coin()
         return result
 
-    def buy_coin(self) -> Book:
-        result = self.repository.buy_coin()
+    async def buy_coin(self, coin_name, coin_count) -> Book:
+        result =  await self.repository.buy_coin(coin_name, coin_count)
         return result
 
 
