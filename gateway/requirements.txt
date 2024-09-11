@@ -8,3 +8,4 @@ httpx
 PyJWT
 requests
 python-multipart
+passlib

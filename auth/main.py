@@ -145,18 +145,19 @@ async def verify_otp(
 # Buy coins
 @app.post("/conver/buy", tags=["Convet Money"])
 def buy_coins(request: _schemas.BuyRequest):
-    try:
-        print(request)
-        # if response.status_code == 200:
-        #     return response.json()
-        # else:
-        #     raise HTTPException(
-        #         status_code=response.status_code, detail=response.json()
-        #     )
-    except requests.exceptions.ConnectionError:
-        raise HTTPException(
-            status_code=503, detail="Authentication service is unavailable"
-        )
+    pass
+    # try:
+    #     print(request)
+    #     # if response.status_code == 200:
+    #     #     return response.json()
+    #     # else:
+    #     #     raise HTTPException(
+    #     #         status_code=response.status_code, detail=response.json()
+    #     #     )
+    # except requests.exceptions.ConnectionError:
+    #     raise HTTPException(
+    #         status_code=503, detail="Authentication service is unavailable"
+    # )
 
 
 if __name__ == "__main__":

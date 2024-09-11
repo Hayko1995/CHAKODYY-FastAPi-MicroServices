@@ -16,9 +16,12 @@ import rpc_client
 app = FastAPI()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+
 @app.get("/items/")
 async def read_items(token: str = Depends(oauth2_scheme)):
     return {"token": token}
+
+
 # Load environment variables
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -84,9 +87,11 @@ class VerifyOtp(BaseModel):
     email: str
     otp: int
 
+
 class Token(BaseModel):
     access_token: str
     token_type: str
+
 
 async def login_auth(data):
     try:
@@ -95,8 +100,9 @@ async def login_auth(data):
             json={"username": data.username, "password": data.password},
         )
         if response.status_code == 200:
-            print(response.json())
-            return Token(access_token=response.json()["access_token"], token_type="bearer")
+            return Token(
+                access_token=response.json()["access_token"], token_type="bearer"
+            )
         else:
             raise HTTPException(
                 status_code=response.status_code, detail=response.json()
@@ -109,13 +115,13 @@ async def login_auth(data):
 
 @app.post("/token")
 async def swagger_login(user_data: OAuth2PasswordRequestForm = Depends()) -> Any:
-    await login_auth(user_data)
+    return await login_auth(user_data)
 
 
 # Authentication routes
 @app.post("/auth/login", tags=["Authentication Service"])
 async def login(user_data: OAuth2PasswordRequestForm = Depends()):
-    await login_auth(user_data)
+    return await login_auth(user_data)
 
 
 @app.post("/auth/register", tags=["Authentication Service"])
