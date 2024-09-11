@@ -18,6 +18,14 @@ class Book(BaseModel):
     author: Author
     
 
+class ConvertImmediately(BaseModel):
+    id: int
+    from_coin: str
+    to_coin: str
+    price: float
+    count: float
+    
+    
 class ConvertRequest(BaseModel):
     from_coin: str
     to_coin: str
@@ -32,3 +40,10 @@ class BuyCoin(BaseModel):
 class BuyRequest(BaseModel):
     coin_name: str
     coin_count: float
+
+
+class CoinScema(BaseModel):
+    uuid: str
+    name: str
+    count: float
+    user_id: int

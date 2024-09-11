@@ -17,11 +17,6 @@ app = FastAPI()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-@app.get("/items/")
-async def read_items(token: str = Depends(oauth2_scheme)):
-    return {"token": token}
-
-
 # Load environment variables
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -69,7 +64,7 @@ class ConvertRequest(BaseModel):
 
 
 class BuyRequest(BaseModel):
-    coinmname: str
+    name: str
     count: str
 
 
@@ -120,7 +115,7 @@ async def swagger_login(user_data: OAuth2PasswordRequestForm = Depends()) -> Any
 
 # Authentication routes
 @app.post("/auth/login", tags=["Authentication Service"])
-async def login(user_data: OAuth2PasswordRequestForm = Depends()):
+async def login(user_data: LoginRequest):
     return await login_auth(user_data)
 
 
@@ -191,11 +186,9 @@ def buy_coins(request: BuyRequest, payload: dict = _fastapi.Depends(jwt_validati
         response = requests.post(
             f"{CONVERTER_BASE_URL}/api/buy",
             json={
-                "payload": payload,
-                "from_coin": request.from_coin,
-                "to_coin": request.to_coin,
-                "price_coin": request.price_coin,
-                "": request.count_coin,
+                "id": payload["id"],
+                "coin_name": request.name,
+                "coin_count": request.count,
             },
         )
         if response.status_code == 200:
@@ -216,14 +209,65 @@ def convert_coins(
     request: ConvertRequest, payload: dict = _fastapi.Depends(jwt_validation)
 ):
     try:
+
         response = requests.post(
             f"{CONVERTER_BASE_URL}/api/convert",
             json={
-                "payload": payload,
+                "id": payload.id,
                 "from_coin": request.from_coin,
                 "to_coin": request.to_coin,
                 "price_coin": request.price_coin,
                 "count_coin": request.count_coin,
+            },
+        )
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(
+                status_code=response.status_code, detail=response.json()
+            )
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(
+            status_code=503, detail="Authentication service is unavailable"
+        )
+
+
+# convert coins
+@app.post("/conver/get_coins", tags=["Convet Money"])
+def get_coins(payload: dict = _fastapi.Depends(jwt_validation)):
+    try:
+        response = requests.post(
+            f"{CONVERTER_BASE_URL}/api/get_coins",
+            json={
+                "id": payload["id"],
+            },
+        )
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(
+                status_code=response.status_code, detail=response.json()
+            )
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(
+            status_code=503, detail="Authentication service is unavailable"
+        )
+
+
+# convert coins
+@app.post("/conver/convert_Immediately", tags=["Convet Money"])
+def convert_Immediately(
+    request: ConvertRequest, payload: dict = _fastapi.Depends(jwt_validation)
+):
+    try:
+        response = requests.post(
+            f"{CONVERTER_BASE_URL}/api/convert_Immediately",
+            json={
+                "id": payload["id"],
+                "from_coin": request.from_coin,
+                "to_coin": request.to_coin,
+                "price": float(request.price_coin),
+                "count": float(request.count_coin),
             },
         )
         if response.status_code == 200:
