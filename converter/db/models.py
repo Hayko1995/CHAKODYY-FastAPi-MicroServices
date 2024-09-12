@@ -13,6 +13,16 @@ Base.metadata.create_all(engine)
 
 
 @dataclass
+class BuyHistory(_database.Base):
+    __tablename__ = "buy_history"
+
+    id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
+    name = _sql.Column(_sql.String, nullable=False)
+    count = _sql.Column(_sql.Float, nullable=False)
+    user_id = _sql.Column(_sql.Integer, nullable=False)
+
+
+@dataclass
 class CoinAccount(_database.Base):
     __tablename__ = "coin_account"
 

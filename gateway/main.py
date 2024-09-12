@@ -203,26 +203,51 @@ def buy_coins(request: BuyRequest, payload: dict = _fastapi.Depends(jwt_validati
         )
 
 
-# convert coins
-@app.post("/conver/convert", tags=["Convet Money"])
-def convert_coins(
-    request: ConvertRequest, payload: dict = _fastapi.Depends(jwt_validation)
-):
+@app.post("/conver/get_buy_history", tags=["Convet Money"])
+def buy_coins(payload: dict = _fastapi.Depends(jwt_validation)):
     try:
-
         response = requests.post(
-            f"{CONVERTER_BASE_URL}/api/convert",
+            f"{CONVERTER_BASE_URL}/api/get_buy_history",
             json={
-                "id": payload.id,
-                "from_coin": request.from_coin,
-                "to_coin": request.to_coin,
-                "price_coin": request.price_coin,
-                "count_coin": request.count_coin,
+                "id": payload["id"],
             },
         )
         if response.status_code == 200:
             return response.json()
         else:
+            raise HTTPException(
+                status_code=response.status_code, detail=response.json()
+            )
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(
+            status_code=503, detail="Authentication service is unavailable"
+        )
+
+
+# convert coins
+@app.post("/conver/limit", tags=["Convet Money"])
+def convert_coins(
+    request: ConvertRequest, payload: dict = _fastapi.Depends(jwt_validation)
+):
+    try:
+        response = requests.post(
+            f"{CONVERTER_BASE_URL}/api/limit",
+            json={
+                "price_coin": request.price_coin,
+                    "convert": {
+                    "id": payload["id"],
+                    "from_coin": request.from_coin,
+                    "to_coin": request.to_coin,
+                    
+                    "count_coin": request.count_coin,
+                }
+            },
+        )
+        if response.status_code == 200:
+            # return response.json()
+            return {"aaa":"aaa"}
+        else:
+            return {"aaa":"aaa"}
             raise HTTPException(
                 status_code=response.status_code, detail=response.json()
             )

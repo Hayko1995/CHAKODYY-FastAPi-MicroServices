@@ -16,7 +16,7 @@ class Book(BaseModel):
     annotation: str
     date_publishing: datetime
     author: Author
-    
+
 
 class ConvertImmediately(BaseModel):
     id: int
@@ -24,18 +24,20 @@ class ConvertImmediately(BaseModel):
     to_coin: str
     price: float
     count: float
-    
-    
+
+
 class ConvertRequest(BaseModel):
     from_coin: str
     to_coin: str
     count_coin: str
     price_coin: str
-    
+
+
 class BuyCoin(BaseModel):
     coin_uuid: uuid.uuid4
     coin_name: str
     coin_count: float
+
 
 class BuyRequest(BaseModel):
     coin_name: str
@@ -47,3 +49,18 @@ class CoinScema(BaseModel):
     name: str
     count: float
     user_id: int
+
+
+class ReqBody(BaseModel):
+    id: int
+    coin_name: str
+    coin_count: float
+
+
+class ReqCoins(BaseModel):
+    id: int
+
+
+class LimitRequest(BaseModel):
+    price_coin: float
+    convert: dict

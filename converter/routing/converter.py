@@ -9,7 +9,15 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import Response
 from depends import get_book_service, get_redis_service, get_convert_service
 from pydantic import BaseModel
-from schemas.schema import Book, BuyRequest, ConvertRequest, ConvertImmediately
+from schemas.schema import (
+    Book,
+    BuyRequest,
+    ConvertRequest,
+    ConvertImmediately,
+    LimitRequest,
+    ReqBody,
+    ReqCoins,
+)
 from services.convert import BookService, RedisService, ConvertService
 from dependency_injector import containers, providers
 from dependency_injector.wiring import Provide, inject
@@ -20,19 +28,28 @@ router = APIRouter(prefix="/api", tags=["coins"])
 
 
 # Defining a basic pydantic class that will be used by fastAPI to validate request body and generate swagger
-class ReqBody(BaseModel):
-    id: int
-    coin_name: str
-    coin_count: float
 
 
-class ReqCoins(BaseModel):
-    id: int
+@router.post("/get_buy_history", status_code=200)
+async def buy_coin(req_body: ReqCoins, db: _orm.Session = Depends(_database.get_db)):
+    try:
+
+        buys = list(
+            db.query(_models.BuyHistory).filter(
+                _models.BuyHistory.user_id == req_body.id
+            )
+        )
+        results = []
+        for buy in buys:
+            results.append({buy.name: buy.count})
+        res = {"status": "success", "buys": results}
+        return res
+    except:
+        raise HTTPException(status_code=response.status_code, detail=response.json())
 
 
 @router.post("/buy", status_code=200)
 async def buy_coin(req_body: ReqBody, db: _orm.Session = Depends(_database.get_db)):
-    # Generate a unique UUID.
     try:
         row = (
             db.query(_models.CoinAccount)
@@ -58,6 +75,12 @@ async def buy_coin(req_body: ReqBody, db: _orm.Session = Depends(_database.get_d
             row.count = row.count + req_body.coin_count
             db.commit()
 
+        coin_history = _models.BuyHistory(
+            name=req_body.coin_name, count=req_body.coin_count, user_id=int(req_body.id)
+        )
+        db.add(coin_history)
+        db.commit()
+
         res = {
             "status": "success",
         }
@@ -70,7 +93,6 @@ async def buy_coin(req_body: ReqBody, db: _orm.Session = Depends(_database.get_d
 async def buy_coin(
     req_body: ConvertImmediately, db: _orm.Session = Depends(_database.get_db)
 ):
-    # Generate a unique UUID.
     try:
 
         from_coin = (
@@ -131,16 +153,16 @@ async def buy_coin(req_body: ReqCoins, db: _orm.Session = Depends(_database.get_
 
 
 @router.post(
-    "/convert",
+    "/limit",
     responses={400: {"description": "Bad request"}},
-    response_model=Book,
-    description="Создание книги",
 )
-async def get_all_books(
-    book_service: BookService = Depends(get_book_service),
-) -> Book:
-    book = book_service.create_book()
-    return book
+async def limit(
+    request: LimitRequest,
+    service: RedisService = Depends(get_redis_service),
+):
+
+    await service.set_value(request.price_coin, request.convert)
+    return {"status": "sucess"}
 
 
 @router.post(

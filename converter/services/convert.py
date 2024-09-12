@@ -28,7 +28,7 @@ class ConvertService:
         return result
 
     async def buy_coin(self, coin_uuid, coin_name, coin_count) -> BuyCoin:
-        result =  await self.repository.buy_coin(coin_uuid, coin_name, coin_count)
+        result = await self.repository.buy_coin(coin_uuid, coin_name, coin_count)
         return result
 
 
@@ -44,5 +44,6 @@ class RedisService:
     def get_keys(self, key) -> List[dict]:
         raise NotImplemented
 
-    def set_value(self) -> None:
-        raise NotImplemented
+    async def set_value(self, key, value) -> None:
+        connection =  await self.connection
+        return await connection.set(str(key), str(value))
