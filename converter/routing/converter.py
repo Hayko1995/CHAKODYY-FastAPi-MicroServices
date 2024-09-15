@@ -33,7 +33,6 @@ router = APIRouter(prefix="/api", tags=["coins"])
 @router.post("/get_buy_history", status_code=200)
 async def buy_coin(req_body: ReqCoins, db: _orm.Session = Depends(_database.get_db)):
     try:
-
         buys = list(
             db.query(_models.BuyHistory).filter(
                 _models.BuyHistory.user_id == req_body.id
@@ -85,45 +84,19 @@ async def buy_coin(req_body: ReqBody, db: _orm.Session = Depends(_database.get_d
             "status": "success",
         }
         return res
-    except:
-        raise HTTPException(status_code=response.status_code, detail=response.json())
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="some problem in code ")
 
 
 @router.post("/convert_Immediately", status_code=200)
-async def buy_coin(
-    req_body: ConvertImmediately, db: _orm.Session = Depends(_database.get_db)
+def convert_Immediately(
+    req_body: ConvertImmediately,
+    db: _orm.Session = Depends(_database.get_db),
+    service: ConvertService = Depends(get_convert_service),
 ):
     try:
-
-        from_coin = (
-            db.query(_models.CoinAccount)
-            .filter(
-                _models.CoinAccount.user_id == req_body.id,
-                _models.CoinAccount.name == req_body.from_coin,
-            )
-            .first()
-        )
-        to_coin = (
-            db.query(_models.CoinAccount)
-            .filter(
-                _models.CoinAccount.user_id == req_body.id,
-                _models.CoinAccount.name == req_body.to_coin,
-            )
-            .first()
-        )
-
-        if from_coin.count < req_body.count:
-            raise HTTPException(
-                status_code=response.status_code, detail=response.json()
-            )
-        from_coin.count = from_coin.count - req_body.count
-
-        to_coin.count = float(
-            float(to_coin.count) + float(req_body.count) * float(req_body.price)
-        )
-        db.flush()
-        db.commit()
-        return req_body
+        return service.convert_imidiatly(req_body, db=db)
     except:
         # raise HTTPException(status_code=response.status_code, detail=response.json())
         return {
@@ -161,7 +134,7 @@ async def limit(
     service: RedisService = Depends(get_redis_service),
 ):
 
-    await service.set_value(request.price_coin, request.convert)
+    service.set_value(request.price_coin, request.convert)
     return {"status": "sucess"}
 
 
@@ -171,5 +144,5 @@ async def limit(
     description="Redis",
 )
 async def getRedis(service: RedisService = Depends(get_redis_service)):
-    value = await service.get_value("my_key")
+    value = service.get_value("my_key")
     return {"result": value}

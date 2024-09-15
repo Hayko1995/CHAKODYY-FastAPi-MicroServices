@@ -1,3 +1,4 @@
+import redis
 from repositories.books import BookRepository, ConvertRepository, RedisRepository
 from services.convert import BookService, RedisService, ConvertService
 from dependency_injector import containers, providers
@@ -15,8 +16,8 @@ redis_repository = RedisRepository()
 convert_repository = ConvertRepository()
 
 
-async def connect_to_redis():
-    connection = await asyncio_redis.Connection.create(
+def connect_to_redis():
+    connection = redis.Redis(
         host="redis", password="password", port=6379
     )
     return connection

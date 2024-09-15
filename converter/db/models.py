@@ -21,8 +21,10 @@ class BuyHistory(_database.Base):
     count = _sql.Column(_sql.Float, nullable=False)
     user_id = _sql.Column(_sql.Integer, nullable=False)
 
+    class Config:
+        orm_mode = True
 
-@dataclass
+
 class CoinAccount(_database.Base):
     __tablename__ = "coin_account"
 
@@ -34,8 +36,10 @@ class CoinAccount(_database.Base):
     count = _sql.Column(_sql.Float, nullable=False)
     user_id = _sql.Column(_sql.Integer, nullable=False)
 
+    class Config:
+        orm_mode = True
 
-@dataclass
+
 class Convert(_database.Base):
     __tablename__ = "convert"
 

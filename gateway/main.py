@@ -180,7 +180,7 @@ async def verify_otp(user_data: VerifyOtp):
 
 
 # Buy coins
-@app.post("/conver/buy", tags=["Convet Money"])
+@app.post("/convert/buy", tags=["Convert Money"])
 def buy_coins(request: BuyRequest, payload: dict = _fastapi.Depends(jwt_validation)):
     try:
         response = requests.post(
@@ -203,7 +203,7 @@ def buy_coins(request: BuyRequest, payload: dict = _fastapi.Depends(jwt_validati
         )
 
 
-@app.post("/conver/get_buy_history", tags=["Convet Money"])
+@app.post("/convert/get_buy_history", tags=["Convert Money"])
 def buy_coins(payload: dict = _fastapi.Depends(jwt_validation)):
     try:
         response = requests.post(
@@ -225,9 +225,10 @@ def buy_coins(payload: dict = _fastapi.Depends(jwt_validation)):
 
 
 # convert coins
-@app.post("/conver/limit", tags=["Convet Money"])
+@app.post("/convert/limit", tags=["Convert Money"])
 def convert_coins(
-    request: ConvertRequest, payload: dict = _fastapi.Depends(jwt_validation)
+    request: ConvertRequest,
+    # payload: dict = _fastapi.Depends(jwt_validation)
 ):
     try:
         response = requests.post(
@@ -235,7 +236,7 @@ def convert_coins(
             json={
                 "price_coin": request.price_coin,
                     "convert": {
-                    "id": payload["id"],
+                    # "id": payload["id"],
                     "from_coin": request.from_coin,
                     "to_coin": request.to_coin,
                     
@@ -243,8 +244,8 @@ def convert_coins(
                 }
             },
         )
+        
         if response.status_code == 200:
-            # return response.json()
             return {"aaa":"aaa"}
         else:
             return {"aaa":"aaa"}
@@ -258,7 +259,7 @@ def convert_coins(
 
 
 # convert coins
-@app.post("/conver/get_coins", tags=["Convet Money"])
+@app.post("/convert/get_coins", tags=["Convert Money"])
 def get_coins(payload: dict = _fastapi.Depends(jwt_validation)):
     try:
         response = requests.post(
@@ -280,7 +281,7 @@ def get_coins(payload: dict = _fastapi.Depends(jwt_validation)):
 
 
 # convert coins
-@app.post("/conver/convert_Immediately", tags=["Convet Money"])
+@app.post("/convert/convert_Immediately", tags=["Convert Money"])
 def convert_Immediately(
     request: ConvertRequest, payload: dict = _fastapi.Depends(jwt_validation)
 ):

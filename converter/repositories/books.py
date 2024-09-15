@@ -1,5 +1,7 @@
 from typing import List
 
+
+from db import models
 from schemas.schema import Book
 
 
@@ -17,8 +19,22 @@ class ConvertRepository:
     def convert_coin(self) -> List[Book]:
         raise NotImplemented
 
-    async def buy_coin(self) -> dict:
+    def buy_coin(self) -> dict:
         raise NotImplemented
+
+    def get_coin(self, id, coin, db) -> models.CoinAccount:
+        try:
+            coin = (
+                db.query(models.CoinAccount)
+                .filter(
+                    models.CoinAccount.user_id == id,
+                    models.CoinAccount.name == coin,
+                )
+                .first()
+            )
+            return coin
+        except Exception as e:
+            raise NotImplemented
 
 
 class RedisRepository:
