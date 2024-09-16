@@ -143,7 +143,7 @@ async def verify_otp(
     if not user:
         raise _fastapi.HTTPException(status_code=404, detail="User not found")
 
-    if not user.otp or user.otp != userdata.otp:
+    if not user.otp or user.otp != userdata.otp:  #todo add here created time comare to now time  if it greder than 30 mins ingore otp 
         raise _fastapi.HTTPException(status_code=400, detail="Invalid OTP")
 
     # Update user's is_verified field
