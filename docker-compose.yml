@@ -66,19 +66,19 @@ services:
   #     - auth
 
 
-  # converter:
-  #   restart: always
-  #   build:
-  #     context: ./converter
-  #   container_name: converter
-  #   # command: ["tail", "-f", "/dev/null"]
-  #   command: sh -c "python app.py"
-  #   volumes:
-  #     - ./converter:/app
-  #   ports:
-  #     - "5003:5003"
-  #   depends_on:
-  #     - redis
+  converter:
+    restart: always
+    build:
+      context: ./converter
+    container_name: converter
+    # command: ["tail", "-f", "/dev/null"]
+    command: sh -c "python app.py"
+    volumes:
+      - ./converter:/app
+    ports:
+      - "5003:5003"
+    depends_on:
+      - redis
 
 
   redis:

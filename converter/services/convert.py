@@ -67,8 +67,10 @@ class RedisService:
         connection = self.connection
         return connection.get(key)
 
-    def get_keys(self, key) -> List[dict]:
-        raise NotImplemented
+    def get_keys(self) -> List[dict]:
+        connection = self.connection
+        connection.keys()
+        return connection.keys()
 
     def set_value(self, key, value) -> None:
         connection = self.connection

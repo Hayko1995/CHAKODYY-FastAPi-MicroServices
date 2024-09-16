@@ -23,18 +23,30 @@ class Transaction(ABC):
 
     def on_message(self, ws, message):
         global current_price
+        tolerance = 0.5
         data = json.loads(message)
         current_price = float(data["p"])
 
-        # print(f"Current price: {current_price}")
-        transaction = self.redis.get_value(current_price)
-        if not transaction is None:
+        byte_literals = self.redis.get_keys()
+        if not byte_literals == []:
+            string_values = [x.decode("utf-8") for x in byte_literals]
 
-            data = literal_eval(transaction.decode("utf8"))
-            transaction = json.dumps(data, indent=4, sort_keys=True)
-            data["price_coin"] = current_price
+            # Step 2: Convert to floats
+            float_values = [float(x) for x in string_values]
 
-            return convert_Immediately(data)
+            smaller_values = [value for value in float_values if value < current_price]
+
+            for value in smaller_values:
+                transactions = self.redis.get_value(str(value))
+                self.redis.delete_value(str(value))
+                if not transactions is None:
+                    transactions = literal_eval(transactions.decode("utf8"))
+                    for transaction in transactions:
+                        # transaction = json.dumps(data, indent=4, sort_keys=True)
+                        transaction["price_coin"] = current_price
+                        convert_Immediately(transaction)
+
+        return {"status": "done"}
 
     def on_error(self, ws, error):
         # print(f"Error: {error}")
