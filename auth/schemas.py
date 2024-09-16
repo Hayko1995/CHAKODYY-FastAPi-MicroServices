@@ -11,6 +11,7 @@ class UserBase(pydantic.BaseModel):
 
 
 class UserCreate(UserBase):
+    username: str
     password: str
 
     class Config:

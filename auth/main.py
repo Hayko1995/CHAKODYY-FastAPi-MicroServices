@@ -10,6 +10,7 @@ import database as _database
 import pika
 import os
 import uvicorn
+from email_validator import validate_email, EmailNotValidError
 
 # rabbitmq connection
 connection = pika.BlockingConnection(
@@ -64,8 +65,20 @@ async def generate_token(
     user_data: _schemas.GenerateUserToken,
     db: _orm.Session = _fastapi.Depends(_services.get_db),
 ):
+
+    try:
+        emailinfo = validate_email(user_data.username, check_deliverability=False)
+        email = emailinfo.normalized
+        print("🐍 File: auth/main.py | Line: 79 | undefined ~ email", email)
+
+    except EmailNotValidError as e:
+
+        email = (
+            db.query(_models.User).filter_by(username=user_data.username).first().email
+        )
+
     user = await _services.authenticate_user(
-        email=user_data.username, password=user_data.password, db=db
+        email=email, password=user_data.password, db=db
     )
 
     if user == "is_verified_false":
@@ -92,7 +105,7 @@ async def get_user(user: _schemas.User = _fastapi.Depends(_services.get_current_
 
 @app.get("/api/users/profile", tags=["User Auth"])
 async def get_user(email: str, db: _orm.Session = _fastapi.Depends(_services.get_db)):
-    return db.query(_models.User and _models.Address).filter_by(id=1).first()
+    return db.query(_models.User).filter_by(id=1).first()
 
 
 @app.post("/api/users/generate_otp", response_model=str, tags=["User Auth"])
@@ -122,6 +135,27 @@ async def send_otp_mail(
 
 
 @app.post("/api/users/verify_otp", tags=["User Auth"])
+async def verify_otp(
+    userdata: _schemas.VerifyOtp, db: _orm.Session = _fastapi.Depends(_services.get_db)
+):
+    user = await _services.get_user_by_email(email=userdata.email, db=db)
+
+    if not user:
+        raise _fastapi.HTTPException(status_code=404, detail="User not found")
+
+    if not user.otp or user.otp != userdata.otp:
+        raise _fastapi.HTTPException(status_code=400, detail="Invalid OTP")
+
+    # Update user's is_verified field
+    user.is_verified = True
+    user.otp = None  # Clear the OTP
+    db.add(user)
+    db.commit()
+
+    return "Email verified successfully"
+
+
+@app.post("/api/users/forgote_password", tags=["User Auth"])  # todo change under code
 async def verify_otp(
     userdata: _schemas.VerifyOtp, db: _orm.Session = _fastapi.Depends(_services.get_db)
 ):

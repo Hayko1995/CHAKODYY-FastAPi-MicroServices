@@ -53,32 +53,32 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  notification_service:
-    restart: always
-    build:
-      context: ./notification_service
-    container_name: notification_service
-    # command: ["tail", "-f", "/dev/null"]
-    command: sh -c "python main.py"
-    volumes:
-      - ./notification_service:/app
-    depends_on:
-      - auth
+  # notification_service:
+  #   restart: always
+  #   build:
+  #     context: ./notification_service
+  #   container_name: notification_service
+  #   # command: ["tail", "-f", "/dev/null"]
+  #   command: sh -c "python main.py"
+  #   volumes:
+  #     - ./notification_service:/app
+  #   depends_on:
+  #     - auth
 
 
-  converter:
-    restart: always
-    build:
-      context: ./converter
-    container_name: converter
-    # command: ["tail", "-f", "/dev/null"]
-    command: sh -c "python app.py"
-    volumes:
-      - ./converter:/app
-    ports:
-      - "5003:5003"
-    depends_on:
-      - redis
+  # converter:
+  #   restart: always
+  #   build:
+  #     context: ./converter
+  #   container_name: converter
+  #   # command: ["tail", "-f", "/dev/null"]
+  #   command: sh -c "python app.py"
+  #   volumes:
+  #     - ./converter:/app
+  #   ports:
+  #     - "5003:5003"
+  #   depends_on:
+  #     - redis
 
 
   redis:

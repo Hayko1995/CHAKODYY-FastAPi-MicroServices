@@ -52,7 +52,7 @@ class GenerateUserToken(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: str
+    username: str
     password: str
 
 
@@ -70,6 +70,7 @@ class BuyRequest(BaseModel):
 
 class UserRegisteration(BaseModel):
     name: str
+    user_name: str
     email: str
     password: str
 
@@ -126,6 +127,7 @@ async def registeration(user_data: UserRegisteration):
             f"{AUTH_BASE_URL}/api/users",
             json={
                 "name": user_data.name,
+                "username": user_data.name,
                 "email": user_data.email,
                 "password": user_data.password,
             },
@@ -133,13 +135,15 @@ async def registeration(user_data: UserRegisteration):
         if response.status_code == 200 or response.status_code == 201:
             return response.json()
         else:
-            raise HTTPException(
-                status_code=response.status_code, detail=response.json()
-            )
+            pass
+            # raise HTTPException(
+            #     status_code=response.status_code, detail=response.json()
+            # )
     except requests.exceptions.ConnectionError:
-        raise HTTPException(
-            status_code=503, detail="Authentication service is unavailable"
-        )
+        pass
+        # raise HTTPException(
+        #     status_code=503, detail="Authentication service is unavailable"
+        # )
 
 
 @app.post("/auth/generate_otp", tags=["Authentication Service"])
@@ -235,20 +239,19 @@ def convert_coins(
             f"{CONVERTER_BASE_URL}/api/limit",
             json={
                 "price_coin": request.price_coin,
-                    "convert": {
+                "convert": {
                     # "id": payload["id"],
                     "from_coin": request.from_coin,
                     "to_coin": request.to_coin,
-                    
                     "count_coin": request.count_coin,
-                }
+                },
             },
         )
-        
+
         if response.status_code == 200:
-            return {"aaa":"aaa"}
+            return {"aaa": "aaa"}
         else:
-            return {"aaa":"aaa"}
+            return {"aaa": "aaa"}
             raise HTTPException(
                 status_code=response.status_code, detail=response.json()
             )

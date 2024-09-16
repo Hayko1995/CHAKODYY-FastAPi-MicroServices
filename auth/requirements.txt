@@ -12,3 +12,4 @@ python-dotenv
 uvicorn
 python-multipart
 pika
+email_validator
