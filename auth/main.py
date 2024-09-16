@@ -1,16 +1,20 @@
-from typing import List
-from fastapi import HTTPException
-import fastapi as _fastapi
-import schemas as _schemas
-import sqlalchemy.orm as _orm
-import models as _models
-import service as _services
 import logging
-import database as _database
-import pika
 import os
+import pika
+
+import fastapi as _fastapi
 import uvicorn
+import sqlalchemy.orm as _orm
+
+import database as _database
+import models as _models
+import schemas as _schemas
+import service as _services
+
+from datetime import datetime
+
 from email_validator import validate_email, EmailNotValidError
+
 
 # rabbitmq connection
 connection = pika.BlockingConnection(
@@ -123,11 +127,12 @@ async def send_otp_mail(
 
     # Generate and send OTP
     otp = _services.generate_otp()
-    print(otp)
+    
     _services.send_otp(userdata.email, otp, channel)
 
     # Store the OTP in the database
     user.otp = otp
+    user.otp_created_at = datetime.now()
     db.add(user)
     db.commit()
 
@@ -143,8 +148,16 @@ async def verify_otp(
     if not user:
         raise _fastapi.HTTPException(status_code=404, detail="User not found")
 
-    if not user.otp or user.otp != userdata.otp:  #todo add here created time comare to now time  if it greder than 30 mins ingore otp 
+    if not user.otp or user.otp != userdata.otp:
         raise _fastapi.HTTPException(status_code=400, detail="Invalid OTP")
+    
+    # OTP expiration check.
+    otp_duration = datetime.now() - user.otp_created_at
+    total_time_difference = otp_duration.total_seconds() / 60  # Difference by minutes.
+
+    otp_expiration_minutes = float(os.environ.get("OTP_EXPIRATION_TIME_MINUTES"))
+    if total_time_difference > otp_expiration_minutes:
+        raise _fastapi.HTTPException(status_code=400, detail="OTP expired. Generate a new OTP and try again.")
 
     # Update user's is_verified field
     user.is_verified = True
@@ -155,25 +168,59 @@ async def verify_otp(
     return "Email verified successfully"
 
 
-@app.post("/api/users/forgote_password", tags=["User Auth"])  # todo change under code
-async def verify_otp(
-    userdata: _schemas.VerifyOtp, db: _orm.Session = _fastapi.Depends(_services.get_db)
+@app.post("/api/users/forgot_password", tags=["User Auth"])
+async def forgot_password(
+    userdata: _schemas.ForgotPassword, db: _orm.Session = _fastapi.Depends(_services.get_db)
 ):
     user = await _services.get_user_by_email(email=userdata.email, db=db)
 
     if not user:
         raise _fastapi.HTTPException(status_code=404, detail="User not found")
+    
+    # Generate and send OTP
+    otp = _services.generate_otp()
+    
+    _services.send_otp(userdata.email, otp, channel)
 
-    if not user.otp or user.otp != userdata.otp:
-        raise _fastapi.HTTPException(status_code=400, detail="Invalid OTP")
-
-    # Update user's is_verified field
-    user.is_verified = True
-    user.otp = None  # Clear the OTP
+    # Store the OTP in the database
+    user.otp = otp
+    user.otp_created_at = datetime.now()
     db.add(user)
     db.commit()
 
-    return "Email verified successfully"
+    return "OTP was sent to the user's email."
+
+
+@app.post("/api/users/reset_password", tags=["User Auth"])
+async def reset_password(
+    userdata: _schemas.ResetPassword, db: _orm.Session = _fastapi.Depends(_services.get_db)
+):
+    user = await _services.get_user_by_email(email=userdata.email, db=db)
+
+    if not user:
+        raise _fastapi.HTTPException(status_code=404, detail="User not found")
+    
+    # Verify OTP
+    if not user.otp or user.otp != userdata.otp:  #todo add here created time compare to now time  if it is greater than 30 mins ingore otp 
+        raise _fastapi.HTTPException(status_code=400, detail="Invalid OTP")
+    
+    # OTP expiration check.
+    otp_duration = datetime.now() - user.otp_created_at
+    total_time_difference = otp_duration.total_seconds() / 60  # Difference by minutes.
+
+    otp_expiration_minutes = float(os.environ.get("OTP_EXPIRATION_TIME_MINUTES"))
+    if total_time_difference > otp_expiration_minutes:
+        raise _fastapi.HTTPException(status_code=400, detail="OTP expired. Generate a new OTP and try again.")
+    
+    if userdata.new_password != userdata.repeat_password:
+        raise _fastapi.HTTPException(status_code=400, detail="Passwords do not match")
+
+    # Update password in the database.
+    user.hashed_password = userdata.new_password
+    db.add(user)
+    db.commit()
+
+    return "OTP was sent to the user's email."
 
 
 if __name__ == "__main__":

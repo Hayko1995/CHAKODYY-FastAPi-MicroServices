@@ -1,9 +1,11 @@
 import datetime as _dt
 import sqlalchemy as _sql
 import sqlalchemy.orm as _orm
-from passlib.hash import pbkdf2_sha256
-from database import Base, engine
 import database as _database
+
+from database import Base, engine
+from passlib.hash import pbkdf2_sha256
+from sqlalchemy.sql import func
 
 Base.metadata.create_all(engine)
 
@@ -16,8 +18,10 @@ class User(_database.Base):
     email = _sql.Column(_sql.String, unique=True, index=True)
     is_verified = _sql.Column(_sql.Boolean, default=False)
     otp = _sql.Column(_sql.Integer)
+    otp_created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.utcnow)
     hashed_password = _sql.Column(_sql.String)
-    date_created = _sql.Column(_sql.DateTime, default=_dt.datetime.utcnow)
+    created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.utcnow)
+    updated_at = _sql.Column(_sql.TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp())
 
     def verify_password(self, password: str):
         return pbkdf2_sha256.verify(password, self.hashed_password)

@@ -53,17 +53,17 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  # notification_service:
-  #   restart: always
-  #   build:
-  #     context: ./notification_service
-  #   container_name: notification_service
-  #   # command: ["tail", "-f", "/dev/null"]
-  #   command: sh -c "python main.py"
-  #   volumes:
-  #     - ./notification_service:/app
-  #   depends_on:
-  #     - auth
+  notification_service:
+    restart: always
+    build:
+      context: ./notification_service
+    container_name: notification_service
+    # command: ["tail", "-f", "/dev/null"]
+    command: sh -c "python main.py"
+    volumes:
+      - ./notification_service:/app
+    depends_on:
+      - auth
 
 
   converter:
