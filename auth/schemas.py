@@ -20,7 +20,6 @@ class UserCreate(UserBase):
 
 class User(UserBase):
     id: int
-    date_created: datetime.datetime
 
     class Config:
         from_attributes = True

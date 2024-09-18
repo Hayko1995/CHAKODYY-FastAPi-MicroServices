@@ -8,7 +8,7 @@ from ast import literal_eval
 import sqlalchemy.orm as _orm
 
 from depends import get_redis_service
-from routing.converter import convert_Immediately
+from routing.converter import convert_Immediately, limit
 from services.convert import RedisService
 
 import sqlalchemy as db
@@ -35,7 +35,6 @@ class Transaction(ABC):
             float_values = [float(x) for x in string_values]
 
             smaller_values = [value for value in float_values if value < current_price]
-
             for value in smaller_values:
                 transactions = self.redis.get_value(str(value))
                 self.redis.delete_value(str(value))
@@ -43,8 +42,13 @@ class Transaction(ABC):
                     transactions = literal_eval(transactions.decode("utf8"))
                     for transaction in transactions:
                         # transaction = json.dumps(data, indent=4, sort_keys=True)
-                        transaction["price_coin"] = current_price
-                        convert_Immediately(transaction)
+                        if "stop_convert" in transaction:
+                            transaction["price"] = transaction["stop_convert"]
+                            del transaction["stop_convert"]
+                            limit(transaction)
+                        else:
+                            transaction["price_coin"] = current_price
+                            convert_Immediately(transaction)
 
         return {"status": "done"}
 

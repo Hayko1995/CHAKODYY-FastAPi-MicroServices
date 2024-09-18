@@ -70,6 +70,7 @@ async def create_user(user: _schemas.UserCreate, db: _orm.Session):
 async def authenticate_user(email: str, password: str, db: _orm.Session):
     # Authenticate a user
     user = await get_user_by_email(email=email, db=db)
+    print("🐍 File: auth/service.py | Line: 73 | undefined ~ user",user)
 
     if not user:
         return False
@@ -87,7 +88,6 @@ async def create_token(user: _models.User):
     # Create a JWT token for authentication
     user_obj = _schemas.User.from_orm(user)
     user_dict = user_obj.model_dump()
-    del user_dict["date_created"]
     token = jwt.encode(user_dict, JWT_SECRET, algorithm="HS256")
     return dict(access_token=token, token_type="bearer")
 

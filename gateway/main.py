@@ -56,8 +56,27 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class ForgoteRequest(BaseModel):
+    email: str
+
+
+class ResetRequest(BaseModel):
+    email: str
+    new_password: str
+    repeat_password: str
+    otp: int
+
+
 class ConvertRequest(BaseModel):
     from_coin: str
+    to_coin: str
+    count_coin: str
+    price_coin: str
+
+
+class StopLimitRequest(BaseModel):
+    from_coin: str
+    stop_convert: str
     to_coin: str
     count_coin: str
     price_coin: str
@@ -89,7 +108,7 @@ class Token(BaseModel):
     token_type: str
 
 
-async def login_auth(data):
+async def login_auth(data: LoginRequest):
     try:
         response = requests.post(
             f"{AUTH_BASE_URL}/api/token",
@@ -101,7 +120,7 @@ async def login_auth(data):
             )
         else:
             raise HTTPException(
-                status_code=response.status_code, detail=response.json()
+                status_code=500, detail="Authentication service is unavailable"
             )
     except requests.exceptions.ConnectionError:
         raise HTTPException(
@@ -118,6 +137,52 @@ async def swagger_login(user_data: OAuth2PasswordRequestForm = Depends()) -> Any
 @app.post("/auth/login", tags=["Authentication Service"])
 async def login(user_data: LoginRequest):
     return await login_auth(user_data)
+
+
+# Authentication routes
+@app.post("/auth/forgot_password", tags=["Authentication Service"])
+async def login(user_data: ForgoteRequest):
+    try:
+        response = requests.post(
+            f"{AUTH_BASE_URL}/api/forgote_password",
+            json={
+                "email": user_data.email,
+            },
+        )
+        if response.status_code == 200 or response.status_code == 201:
+            return response.json()
+        else:
+            raise HTTPException(
+                status_code=response.status_code, detail=response.json()
+            )
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(
+            status_code=503, detail="Authentication service is unavailable"
+        )
+
+
+@app.post("/auth/reset_password", tags=["Authentication Service"])
+async def login(user_data: ResetRequest):
+    try:
+        response = requests.post(
+            f"{AUTH_BASE_URL}/api/reset_password",
+            json={
+                "email": user_data.email,
+                "new_password": user_data.new_password,
+                "repeat_password": user_data.repeat_password,
+                "otp": user_data.otp,
+            },
+        )
+        if response.status_code == 200 or response.status_code == 201:
+            return response.json()
+        else:
+            raise HTTPException(
+                status_code=response.status_code, detail=response.json()
+            )
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(
+            status_code=503, detail="Authentication service is unavailable"
+        )
 
 
 @app.post("/auth/register", tags=["Authentication Service"])
@@ -231,8 +296,7 @@ def buy_coins(payload: dict = _fastapi.Depends(jwt_validation)):
 # convert coins
 @app.post("/convert/limit", tags=["Convert Money"])
 def convert_coins(
-    request: ConvertRequest,
-    # payload: dict = _fastapi.Depends(jwt_validation)
+    request: ConvertRequest, payload: dict = _fastapi.Depends(jwt_validation)
 ):
     try:
         response = requests.post(
@@ -240,7 +304,7 @@ def convert_coins(
             json={
                 "price_coin": request.price_coin,
                 "convert": {
-                    # "id": payload["id"],
+                    "id": payload["id"],
                     "from_coin": request.from_coin,
                     "to_coin": request.to_coin,
                     "count_coin": request.count_coin,
@@ -249,7 +313,39 @@ def convert_coins(
         )
 
         if response.status_code == 200:
+            return {"status": "success"}
+        else:
             return {"aaa": "aaa"}
+            raise HTTPException(
+                status_code=response.status_code, detail=response.json()
+            )
+    except requests.exceptions.ConnectionError:
+        raise HTTPException(
+            status_code=503, detail="Authentication service is unavailable"
+        )
+
+
+@app.post("/convert/stop_limit", tags=["Convert Money"])
+def stop_limit(
+    request: StopLimitRequest, payload: dict = _fastapi.Depends(jwt_validation)
+):
+    try:
+        response = requests.post(
+            f"{CONVERTER_BASE_URL}/api/limit",
+            json={
+                "price_coin": request.price_coin,
+                "convert": {
+                    "id": payload["id"],
+                    "stop_convert": request.stop_convert,
+                    "from_coin": request.from_coin,
+                    "to_coin": request.to_coin,
+                    "count_coin": request.count_coin,
+                },
+            },
+        )
+
+        if response.status_code == 200:
+            return {"status": "success"}
         else:
             return {"aaa": "aaa"}
             raise HTTPException(

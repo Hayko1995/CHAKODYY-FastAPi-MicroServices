@@ -129,11 +129,10 @@ async def buy_coin(req_body: ReqCoins, db: _orm.Session = Depends(_database.get_
     "/limit",
     responses={400: {"description": "Bad request"}},
 )
-async def limit(
+def limit(
     request: LimitRequest,
     service: RedisService = Depends(get_redis_service),
 ):
-
     service.set_value(request.price_coin, request.convert)
     return {"status": "sucess"}
 

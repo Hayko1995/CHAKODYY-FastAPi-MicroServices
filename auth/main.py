@@ -73,7 +73,6 @@ async def generate_token(
     try:
         emailinfo = validate_email(user_data.username, check_deliverability=False)
         email = emailinfo.normalized
-        print("🐍 File: auth/main.py | Line: 79 | undefined ~ email", email)
 
     except EmailNotValidError as e:
 
