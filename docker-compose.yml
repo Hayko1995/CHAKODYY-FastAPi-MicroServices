@@ -23,6 +23,22 @@ services:
       - "5003:5003"
     depends_on:
       - redis
+      - postgres
+
+  binanacetestserver:
+    restart: always
+    build:
+      context: ./binanaceTestServer
+    container_name: binanaceTestServer
+    # command: ["tail", "-f", "/dev/null"]
+    command: sh -c "python main.py"
+    volumes:
+      - ./binanaceTestServer:/binanaceTestServer
+    ports:
+      - "5005:5005"
+    depends_on:
+      - redis
+      - postgres
 
   redis:
     image: redis
