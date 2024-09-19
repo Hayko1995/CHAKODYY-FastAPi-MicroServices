@@ -6,12 +6,13 @@ from fastapi import FastAPI, BackgroundTasks
 from abc import ABC
 from db import models as _models
 
-from services.transactions import Transaction
-from routing.converter import router as books_routing
+from apps.converter.services.transactions import Transaction
+from apps.converter.routing.converter import router as converter
+from apps.auth.router import router as converter
 
 
 app = FastAPI(openapi_url="/core/openapi.json", docs_url="/docs")
-app.include_router(books_routing)
+app.include_router(converter)
 logging.basicConfig(level=logging.INFO)
 _models.Base.metadata.create_all(_models.engine)
 

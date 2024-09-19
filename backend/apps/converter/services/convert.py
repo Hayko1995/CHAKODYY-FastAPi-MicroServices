@@ -5,24 +5,11 @@ from urllib import response
 
 from fastapi import HTTPException
 
-from repositories.books import BookRepository, ConvertRepository, RedisRepository
-from schemas.schema import Book, BuyCoin
+from apps.converter.repositories.repository import  ConvertRepository, RedisRepository
+from apps.converter.schemas.schema import Book, BuyCoin
 import asyncio_redis
 import sqlalchemy.orm as _orm
 
-
-class BookService:
-
-    def __init__(self, repository: BookRepository) -> None:
-        self.repository = repository
-
-    def get_books(self) -> List[Book]:
-        result = self.repository.get_books()
-        return result
-
-    def create_book(self) -> Book:
-        result = self.repository.create_book()
-        return result
 
 
 class ConvertService:

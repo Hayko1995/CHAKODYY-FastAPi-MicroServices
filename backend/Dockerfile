@@ -7,8 +7,8 @@ RUN pip install --upgrade pip
 # RUN pip install gdal
 
 ENV PYTHONUNBUFFERED 1
-RUN mkdir /app
-WORKDIR /app
-ADD requirements.txt /app/
+RUN mkdir /backend
+WORKDIR /backend
+ADD requirements.txt /backend/
 RUN pip install -r requirements.txt
-ADD . /app/
+ADD . /backend/

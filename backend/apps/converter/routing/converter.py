@@ -7,18 +7,15 @@ import sqlalchemy.orm as _orm
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import Response
-from depends import get_book_service, get_redis_service, get_convert_service
+from depends import get_redis_service, get_convert_service
 from pydantic import BaseModel
-from schemas.schema import (
-    Book,
-    BuyRequest,
-    ConvertRequest,
+from apps.converter.schemas.schema import (
     ConvertImmediately,
     LimitRequest,
     ReqBody,
     ReqCoins,
 )
-from services.convert import BookService, RedisService, ConvertService
+from apps.converter.services.convert import RedisService, ConvertService
 from dependency_injector import containers, providers
 from dependency_injector.wiring import Provide, inject
 from typing import List

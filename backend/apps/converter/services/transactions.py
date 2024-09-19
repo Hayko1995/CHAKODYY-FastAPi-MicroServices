@@ -8,8 +8,8 @@ from ast import literal_eval
 import sqlalchemy.orm as _orm
 
 from depends import get_redis_service
-from routing.converter import convert_Immediately, limit
-from services.convert import RedisService
+from apps.converter.routing.converter import convert_Immediately, limit
+from apps.converter.services.convert import RedisService
 
 import sqlalchemy as db
 

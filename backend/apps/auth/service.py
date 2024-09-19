@@ -5,9 +5,10 @@ import email_validator as _email_check
 import fastapi as _fastapi
 import fastapi.security as _security
 from passlib.hash import pbkdf2_sha256
-import database as _database
-import schemas as _schemas
-import models as _models
+from apps.notification.email_service import notification
+import db.database as _database
+import apps.auth.schemas as _schemas
+import db.models as _models
 import random
 import json
 import pika
@@ -70,7 +71,7 @@ async def create_user(user: _schemas.UserCreate, db: _orm.Session):
 async def authenticate_user(email: str, password: str, db: _orm.Session):
     # Authenticate a user
     user = await get_user_by_email(email=email, db=db)
-    print("🐍 File: auth/service.py | Line: 73 | undefined ~ user",user)
+    print("🐍 File: auth/service.py | Line: 73 | undefined ~ user", user)
 
     if not user:
         return False
@@ -125,10 +126,8 @@ def connect_to_rabbitmq():
             time.sleep(5)
 
 
-def send_otp(email, otp, channel):
-    # Send an OTP email notification using RabbitMQ
-    connection = connect_to_rabbitmq()
-    channel = connection.channel()
+def send_otp(email, otp):
+    # Send an OTP email notification
     message = {
         "email": email,
         "subject": "Account Verification OTP Notification",
@@ -137,29 +136,7 @@ def send_otp(email, otp, channel):
     }
 
     try:
-        queue_declare_ok = channel.queue_declare(
-            queue="email_notification", passive=True
-        )
-        current_durable = queue_declare_ok.method.queue
-
-        if current_durable:
-            if queue_declare_ok.method.queue != current_durable:
-                channel.queue_delete(queue="email_notification")
-                channel.queue_declare(queue="email_notification", durable=True)
-        else:
-            channel.queue_declare(queue="email_notification", durable=True)
-
-        channel.basic_publish(
-            exchange="",
-            routing_key="email_notification",
-            body=json.dumps(message),
-            properties=pika.BasicProperties(
-                delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE
-            ),
-        )
+        notification(message)
         print("Sent OTP email notification")
     except Exception as err:
         print(f"Failed to publish message: {err}")
-    finally:
-        channel.close()
-        connection.close()
