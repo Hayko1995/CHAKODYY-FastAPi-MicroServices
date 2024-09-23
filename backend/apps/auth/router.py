@@ -1,6 +1,9 @@
 import logging
 import os
+from typing import Any
+from fastapi import Depends, HTTPException
 import pika
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 import fastapi
 from fastapi import BackgroundTasks
@@ -17,10 +20,12 @@ from email_validator import validate_email, EmailNotValidError
 
 from db import models
 
-router = fastapi.APIRouter(prefix="/coin", tags=["coins"])
+
+auth = fastapi.APIRouter(prefix="/auth", tags=["auth"])
+oauth2schema = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 
-@router.post("/api/users", tags=["User Auth"])
+@auth.post("/api/users")
 async def create_user(
     user: schemas.UserCreate, db: orm.Session = fastapi.Depends(_services.get_db)
 ):
@@ -40,7 +45,27 @@ async def create_user(
     )
 
 
-@router.post("/api/delete_user", tags=["User Auth"])  # todo chenage to JWT verefication
+@auth.post("/api/super_users")
+async def create_user(
+    user: schemas.UserCreate, db: orm.Session = fastapi.Depends(_services.get_db)
+):
+    db_user = await _services.get_user_by_email(email=user.email, db=db)
+
+    if db_user:
+        logging.info("User with that email already exists")
+        raise fastapi.HTTPException(
+            status_code=200, detail="User with that email already exists"
+        )
+
+    user = await _services.create_super_user(user=user, db=db)
+
+    return fastapi.HTTPException(
+        status_code=201,
+        detail="User Registered, Please verify email to activate account !",
+    )
+
+
+@auth.post("/api/delete_user")  # todo chenage to JWT verefication
 async def delete_user(
     user: schemas.UserDelete, db: orm.Session = fastapi.Depends(_services.get_db)
 ):
@@ -53,12 +78,50 @@ async def delete_user(
 
 
 # Endpoint to check if the API is live
-@router.get("/check_api")
+@auth.get("/check_api")
 async def check_api():
     return {"status": "Connected to API Successfully"}
 
 
-@router.post("/api/token", tags=["User Auth"])
+@auth.post("/token")  # marge with "/api/token"
+async def swagger_login(
+    user_data: OAuth2PasswordRequestForm = Depends(),
+    db: orm.Session = fastapi.Depends(_services.get_db),
+) -> Any:
+
+    try:
+        emailinfo = validate_email(user_data.username, check_deliverability=False)
+        email = emailinfo.normalized
+
+    except EmailNotValidError as e:
+
+        email = (
+            db.query(models.User).filter_by(username=user_data.username).first().email
+        )
+
+    user = await _services.authenticate_user(
+        email=email, password=user_data.password, db=db
+    )
+
+    if user == "is_verified_false":
+        logging.info(
+            "Email verification is pending. Please verify your email to proceed. "
+        )
+        raise fastapi.HTTPException(
+            status_code=403,
+            detail="Email verification is pending. Please verify your email to proceed.",
+        )
+
+    if not user:
+        logging.info("Invalid Credentials")
+        raise fastapi.HTTPException(status_code=401, detail="Invalid Credentials")
+
+    logging.info("JWT Token Generated")
+
+    return await _services.create_token(user=user)
+
+
+@auth.post("/api/token")
 async def generate_token(
     # form_data: _security.OAuth2PasswordRequestForm = fastapi.Depends(),
     user_data: schemas.GenerateUserToken,
@@ -96,7 +159,7 @@ async def generate_token(
     return await _services.create_token(user=user)
 
 
-@router.get("/api/users/me", response_model=schemas.User, tags=["User Auth"])
+@auth.get("/api/users/me", response_model=schemas.User, tags=["User Auth"])
 async def get_user(user: schemas.User = fastapi.Depends(_services.get_current_user)):
     return user
 
@@ -107,7 +170,7 @@ def write_notification(email: str, message=""):
         email_file.write(content)
 
 
-@router.post("/api/users/generate_otp", response_model=str, tags=["User Auth"])
+@auth.post("/api/users/generate_otp", response_model=str)
 async def send_otp_mail(
     userdata: schemas.GenerateOtp,
     background_tasks: BackgroundTasks,
@@ -136,7 +199,7 @@ async def send_otp_mail(
     return "OTP sent to your email"
 
 
-@router.post("/api/users/verify_otp", tags=["User Auth"])
+@auth.post("/api/users/verify_otp")
 async def verify_otp(
     userdata: schemas.VerifyOtp, db: orm.Session = fastapi.Depends(_services.get_db)
 ):
@@ -167,7 +230,7 @@ async def verify_otp(
     return "Email verified successfully"
 
 
-@router.post("/api/users/forgot_password", tags=["User Auth"])
+@auth.post("/api/users/forgot_password")  # add Test
 async def forgot_password(
     userdata: schemas.ForgotPassword,
     db: orm.Session = fastapi.Depends(_services.get_db),
@@ -191,7 +254,7 @@ async def forgot_password(
     return "OTP was sent to the user's email."
 
 
-@router.post("/api/users/reset_password", tags=["User Auth"])
+@auth.post("/api/users/reset_password")  # add Test
 async def reset_password(
     userdata: schemas.ResetPassword,
     db: orm.Session = fastapi.Depends(_services.get_db),

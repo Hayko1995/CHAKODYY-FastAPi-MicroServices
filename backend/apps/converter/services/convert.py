@@ -16,10 +16,10 @@ class ConvertService:
     def __init__(self, repository: ConvertRepository) -> None:
         self.repository = repository
 
-    def convert_imidiatly(self, req_body, db) -> List[Book]:
+    def convert_imidiatly(self, req_body,payload,  db) -> List[Book]:
         try:
-            from_coin = self.repository.get_coin(req_body.id, req_body.from_coin, db=db)
-            to_coin = self.repository.get_coin(req_body.id, req_body.to_coin, db=db)
+            from_coin = self.repository.get_coin(payload.id, req_body.from_coin, db=db)
+            to_coin = self.repository.get_coin(payload.id, req_body.to_coin, db=db)
 
             if from_coin.count < req_body.count:
                 raise HTTPException(

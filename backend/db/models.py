@@ -25,6 +25,7 @@ class User(_database.Base):
     username = _sql.Column(_sql.String)
     email = _sql.Column(_sql.String, unique=True, index=True)
     is_verified = _sql.Column(_sql.Boolean, default=False)
+    is_admin = _sql.Column(_sql.Boolean, default=False)
     otp = _sql.Column(_sql.Integer)
     otp_created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.utcnow)
     hashed_password = _sql.Column(_sql.String)

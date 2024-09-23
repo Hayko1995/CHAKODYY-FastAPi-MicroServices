@@ -17,34 +17,14 @@ from app import app
 import apps.auth.service as services
 import db.models as models
 
-SQLALCHEMY_DATABASE_URL = "sqlite://"
-
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-models.Base.metadata.create_all(models.engine)
-
-
-def override_get_db():
-    try:
-        db = TestingSessionLocal()
-        yield db
-    finally:
-        db.close()
-
-
-app.dependency_overrides[services.get_db] = override_get_db
 
 client = TestClient(app)
 
 
+global access_token
+
 def test_chack_api():
-    response = client.get("/coin/check_api")
+    response = client.get("/auth/check_api")
     assert response.status_code == 200
     assert response.json() == {"status": "Connected to API Successfully"}
 
@@ -55,7 +35,7 @@ def test_user_create():
         "Content-Type": "application/json",
     }
 
-    response = client.post("/coin/api/users", headers=headers)
+    response = client.post("/auth/api/super_users", headers=headers)
     assert response.status_code == 422
     json_str = {
         "name": "string",
@@ -65,7 +45,7 @@ def test_user_create():
     }
 
     response = client.post(
-        "/coin/api/users", headers=headers, data=json.dumps(json_str)
+        "/auth/api/super_users", headers=headers, data=json.dumps(json_str)
     )
 
     assert response.status_code == 200
@@ -78,28 +58,36 @@ def test_get_jwt():
         "Content-Type": "application/json",
     }
     json_str = {
-        "name": "test",
-        "email": "test@gmail.com",
-        "username": "test",
-        "password": "password",
+        "username": "test@gmail.com",
+        "password": "string",
     }
-    db = orm.Session = fastapi.Depends(services.get_db)
-
-    db_user = services.get_user_by_email_hard(email=json_str["email"], db=override_get_db())
-    services.verefy_user(db_user, override_get_db())
-
-    if db_user == None:
-        raise ValueError("Value cannot be negative")
-
-    if db_user.is_verified:
-        services.verefy_user(db_user, db=db)
 
     response = client.post(
-        "/coin/api/users", headers=headers, data=json.dumps(json_str)
+        "/auth/api/token", headers=headers, data=json.dumps(json_str)
     )
 
     assert response.status_code == 200
-    print(response.json())
+    access_token = response.json()["access_token"]
+    
+
+
+def buy_coin():
+
+    headers = {
+        "accept": "application/json",
+        "Content-Type": "application/json",
+    }
+    json_str = {
+        "username": "test@gmail.com",
+        "password": "string",
+    }
+
+    response = client.post(
+        "/coins/api/buy", headers=headers, data=json.dumps(json_str)
+    )
+
+    assert response.status_code == 200
+
 
 
 # def test_user_delete():

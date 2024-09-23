@@ -52,7 +52,6 @@ class CoinScema(BaseModel):
 
 
 class ReqBody(BaseModel):
-    id: int
     coin_name: str
     coin_count: float
 

@@ -18,7 +18,7 @@ import os
 # Load environment variables
 JWT_SECRET = os.getenv("JWT_SECRET")
 RABBITMQ_URL = os.getenv("RABBITMQ_URL")
-oauth2schema = _security.OAuth2PasswordBearer("/api/token")
+oauth2schema = _security.OAuth2PasswordBearer("/auth/token")
 
 
 def create_database():
@@ -77,6 +77,32 @@ async def create_user(user: _schemas.UserCreate, db: _orm.Session):
         email=email,
         username=username,
         name=name,
+        hashed_password=pbkdf2_sha256.hash(user.password),
+    )
+    db.add(user_obj)
+    db.commit()
+    db.refresh(user_obj)
+    return user_obj
+
+
+async def create_super_user(user: _schemas.UserCreate, db: _orm.Session):
+    # Create a new user in the database
+    try:
+        valid = _email_check.validate_email(user.email)
+        name = user.name
+        username = user.username
+        email = valid.email
+    except _email_check.EmailNotValidError:
+        raise _fastapi.HTTPException(
+            status_code=404, detail="Please enter a valid email"
+        )
+
+    user_obj = _models.User(
+        email=email,
+        username=username,
+        name=name,
+        is_verified=True,
+        is_admin=True,
         hashed_password=pbkdf2_sha256.hash(user.password),
     )
     db.add(user_obj)

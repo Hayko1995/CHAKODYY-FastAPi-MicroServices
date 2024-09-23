@@ -16,7 +16,8 @@ class UserCreate(UserBase):
 
     class Config:
         from_attributes = True
-        
+
+
 class UserDelete(pydantic.BaseModel):
     email: str
 
@@ -49,7 +50,7 @@ class BuyRequest(pydantic.BaseModel):
     payload: dict
     coin: str
     count: int
-    
+
 
 class ForgotPassword(pydantic.BaseModel):
     email: str
@@ -60,3 +61,8 @@ class ResetPassword(pydantic.BaseModel):
     new_password: str
     repeat_password: str
     otp: int
+
+
+class LoginRequest(pydantic.BaseModel):
+    username: str
+    password: str
