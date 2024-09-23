@@ -44,6 +44,23 @@ async def get_user_by_email(email: str, db: _orm.Session):
     )
 
 
+def get_user_by_email_hard(email: str, db: _orm.Session):
+    # Retrieve a user by email from the database
+    return db.query(_models.User).filter(_models.User.email == email).first()
+
+
+def verefy_user(user: _models.User, db: _orm.Session):
+    user.is_verified = True
+    db.commit()
+
+
+async def delete_user_by_email(email: str, db: _orm.Session):
+    # Retrieve a user by email from the database
+
+    db.query(_models.User).filter(_models.User.email == email).delete()
+    db.commit()
+
+
 async def create_user(user: _schemas.UserCreate, db: _orm.Session):
     # Create a new user in the database
     try:
@@ -71,7 +88,6 @@ async def create_user(user: _schemas.UserCreate, db: _orm.Session):
 async def authenticate_user(email: str, password: str, db: _orm.Session):
     # Authenticate a user
     user = await get_user_by_email(email=email, db=db)
-    print("🐍 File: auth/service.py | Line: 73 | undefined ~ user", user)
 
     if not user:
         return False
@@ -102,6 +118,7 @@ async def get_current_user(
         payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
         user = db.query(_models.User).get(payload["id"])
     except:
+
         raise _fastapi.HTTPException(
             status_code=401, detail="Invalid Email or Password"
         )

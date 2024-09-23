@@ -16,23 +16,13 @@ class UserCreate(UserBase):
 
     class Config:
         from_attributes = True
+        
+class UserDelete(pydantic.BaseModel):
+    email: str
 
 
 class User(UserBase):
     id: int
-
-    class Config:
-        from_attributes = True
-
-
-class AddressBase(pydantic.BaseModel):
-    street: str
-    landmark: str
-    city: str
-    country: str
-    pincode: str
-    latitude: float
-    longitude: float
 
     class Config:
         from_attributes = True

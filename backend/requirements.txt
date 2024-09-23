@@ -22,3 +22,5 @@ pika
 uvicorn[standard]
 websockets
 wsproto
+pytest
+httpx

@@ -5,7 +5,7 @@ import pika
 import fastapi
 from fastapi import BackgroundTasks
 import uvicorn
-import sqlalchemy.orm as _orm
+import sqlalchemy.orm as orm
 
 
 from apps.auth import schemas
@@ -22,7 +22,7 @@ router = fastapi.APIRouter(prefix="/coin", tags=["coins"])
 
 @router.post("/api/users", tags=["User Auth"])
 async def create_user(
-    user: schemas.UserCreate, db: _orm.Session = fastapi.Depends(_services.get_db)
+    user: schemas.UserCreate, db: orm.Session = fastapi.Depends(_services.get_db)
 ):
     db_user = await _services.get_user_by_email(email=user.email, db=db)
 
@@ -40,6 +40,18 @@ async def create_user(
     )
 
 
+@router.post("/api/delete_user", tags=["User Auth"])  # todo chenage to JWT verefication
+async def delete_user(
+    user: schemas.UserDelete, db: orm.Session = fastapi.Depends(_services.get_db)
+):
+    await _services.delete_user_by_email(email=user.email, db=db)
+
+    return fastapi.HTTPException(
+        status_code=200,
+        detail="User Registered, Please verify email to activate account !",
+    )
+
+
 # Endpoint to check if the API is live
 @router.get("/check_api")
 async def check_api():
@@ -50,7 +62,7 @@ async def check_api():
 async def generate_token(
     # form_data: _security.OAuth2PasswordRequestForm = fastapi.Depends(),
     user_data: schemas.GenerateUserToken,
-    db: _orm.Session = fastapi.Depends(_services.get_db),
+    db: orm.Session = fastapi.Depends(_services.get_db),
 ):
 
     try:
@@ -99,7 +111,7 @@ def write_notification(email: str, message=""):
 async def send_otp_mail(
     userdata: schemas.GenerateOtp,
     background_tasks: BackgroundTasks,
-    db: _orm.Session = fastapi.Depends(_services.get_db),
+    db: orm.Session = fastapi.Depends(_services.get_db),
 ):
     user = await _services.get_user_by_email(email=userdata.email, db=db)
 
@@ -126,7 +138,7 @@ async def send_otp_mail(
 
 @router.post("/api/users/verify_otp", tags=["User Auth"])
 async def verify_otp(
-    userdata: schemas.VerifyOtp, db: _orm.Session = fastapi.Depends(_services.get_db)
+    userdata: schemas.VerifyOtp, db: orm.Session = fastapi.Depends(_services.get_db)
 ):
     user = await _services.get_user_by_email(email=userdata.email, db=db)
 
@@ -158,7 +170,7 @@ async def verify_otp(
 @router.post("/api/users/forgot_password", tags=["User Auth"])
 async def forgot_password(
     userdata: schemas.ForgotPassword,
-    db: _orm.Session = fastapi.Depends(_services.get_db),
+    db: orm.Session = fastapi.Depends(_services.get_db),
 ):
     user = await _services.get_user_by_email(email=userdata.email, db=db)
 
@@ -182,7 +194,7 @@ async def forgot_password(
 @router.post("/api/users/reset_password", tags=["User Auth"])
 async def reset_password(
     userdata: schemas.ResetPassword,
-    db: _orm.Session = fastapi.Depends(_services.get_db),
+    db: orm.Session = fastapi.Depends(_services.get_db),
 ):
     user = await _services.get_user_by_email(email=userdata.email, db=db)
 

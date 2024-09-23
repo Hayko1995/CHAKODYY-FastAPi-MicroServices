@@ -101,7 +101,7 @@ class WebSocketClient(ABC):
         self.ws.on_open = self.on_open
 
     def on_message(self, ws, message):
-        print("🐍 File: services/transactions.py | Line: 104 | __init__ ~ message",message)
+        
         global current_price
         tolerance = 0.5
         data = json.loads(message)
