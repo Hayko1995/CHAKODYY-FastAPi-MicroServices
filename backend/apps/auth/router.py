@@ -18,6 +18,7 @@ from datetime import datetime
 
 from email_validator import validate_email, EmailNotValidError
 
+from apps.converter.routing.converter import jwt_validation
 from db import models
 
 
@@ -67,9 +68,10 @@ async def create_user(
 
 @auth.post("/api/delete_user")  # todo chenage to JWT verefication
 async def delete_user(
-    user: schemas.UserDelete, db: orm.Session = fastapi.Depends(_services.get_db)
+    db: orm.Session = fastapi.Depends(_services.get_db),
+    payload: dict = fastapi.Depends(jwt_validation),
 ):
-    await _services.delete_user_by_email(email=user.email, db=db)
+    await _services.delete_user_by_id(id=payload['id'], db=db)
 
     return fastapi.HTTPException(
         status_code=200,

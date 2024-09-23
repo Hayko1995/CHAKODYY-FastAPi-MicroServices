@@ -17,11 +17,6 @@ class UserCreate(UserBase):
     class Config:
         from_attributes = True
 
-
-class UserDelete(pydantic.BaseModel):
-    email: str
-
-
 class User(UserBase):
     id: int
 

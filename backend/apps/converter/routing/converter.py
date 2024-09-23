@@ -17,7 +17,6 @@ from apps.converter.schemas.schema import (
     ConvertImmediately,
     LimitRequest,
     ReqBody,
-    ReqCoins,
 )
 from apps.converter.services.convert import RedisService, ConvertService
 from dependency_injector import containers, providers
@@ -42,11 +41,14 @@ async def jwt_validation(token: str = fastapi.Depends(oauth2_scheme)):
 
 
 @router.post("/get_buy_history", status_code=200)
-async def buy_coin(req_body: ReqCoins, db: _orm.Session = Depends(_database.get_db)):
+async def buy_coin(
+    db: _orm.Session = Depends(_database.get_db),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
     try:
         buys = list(
             db.query(_models.BuyHistory).filter(
-                _models.BuyHistory.user_id == req_body.id
+                _models.BuyHistory.user_id == payload["id"]
             )
         )
         results = []
@@ -54,6 +56,38 @@ async def buy_coin(req_body: ReqCoins, db: _orm.Session = Depends(_database.get_
             results.append({buy.name: buy.count})
         res = {"status": "success", "buys": results}
         return res
+
+    except:
+        raise HTTPException(status_code=response.status_code, detail=response.json())
+
+
+@router.post("/delete_history", status_code=200)
+async def delete_history(
+    db: _orm.Session = Depends(_database.get_db),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
+    try:
+
+        db.query(_models.BuyHistory).filter(
+            _models.BuyHistory.user_id == payload["id"]
+        ).delete()
+        db.commit()
+
+    except:
+        raise HTTPException(status_code=response.status_code, detail=response.json())
+    
+@router.post("/delete_buys", status_code=200)
+async def delete_buys(
+    db: _orm.Session = Depends(_database.get_db),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
+    try:
+
+        db.query(_models.CoinAccount).filter(
+            _models.CoinAccount.user_id == payload["id"]
+        ).delete()
+        db.commit()
+
     except:
         raise HTTPException(status_code=response.status_code, detail=response.json())
 
@@ -64,12 +98,12 @@ async def buy_coin(
     payload: dict = fastapi.Depends(jwt_validation),
     db: _orm.Session = Depends(_database.get_db),
 ):
-    print("🐍 File: routing/converter.py | Line: 67 | undefined ~ payload", payload)
+    req_body.coin_name = req_body.coin_name.upper()
     try:
         row = (
             db.query(_models.CoinAccount)
             .filter(
-                _models.CoinAccount.user_id == payload.id,
+                _models.CoinAccount.user_id == payload["id"],
                 _models.CoinAccount.name == req_body.coin_name,
             )
             .first()
@@ -81,7 +115,7 @@ async def buy_coin(
                 uuid=coin_uuid,
                 name=req_body.coin_name,
                 count=req_body.coin_count,
-                user_id=int(req_body.id),
+                user_id=int(payload["id"]),
             )
 
             db.add(data)
@@ -91,7 +125,9 @@ async def buy_coin(
             db.commit()
 
         coin_history = _models.BuyHistory(
-            name=req_body.coin_name, count=req_body.coin_count, user_id=int(req_body.id)
+            name=req_body.coin_name,
+            count=req_body.coin_count,
+            user_id=int(payload["id"]),
         )
         db.add(coin_history)
         db.commit()
@@ -113,12 +149,6 @@ def convert_Immediately(
     payload: dict = fastapi.Depends(jwt_validation),
 ):
     try:
-        print(
-            "🐍 File: routing/converter.py | Line: 110 | undefined ~ payload", payload
-        )
-        print(
-            "🐍 File: routing/converter.py | Line: 110 | undefined ~ req_body", req_body
-        )
         return service.convert_imidiatly(req_body, payload, db=db)
 
     except:
@@ -129,13 +159,16 @@ def convert_Immediately(
 
 
 @router.post("/get_coins", status_code=200)
-async def buy_coin(req_body: ReqCoins, db: _orm.Session = Depends(_database.get_db)):
+async def buy_coin(
+    db: _orm.Session = Depends(_database.get_db),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
 
     # _models.CoinAccount
     try:
         res = list(
             db.query(_models.CoinAccount)
-            .filter(_models.CoinAccount.user_id == req_body.id)
+            .filter(_models.CoinAccount.user_id == payload["id"])
             .all(),
         )
         coins = []
@@ -145,8 +178,7 @@ async def buy_coin(req_body: ReqCoins, db: _orm.Session = Depends(_database.get_
     except:
         raise HTTPException(status_code=response.status_code, detail=response.json())
 
-    res = {"status": "success", "coins": coins}
-    return res
+    return {"status": "success", "coins": coins}
 
 
 @router.post(

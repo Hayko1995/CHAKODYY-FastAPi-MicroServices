@@ -5,21 +5,24 @@ from urllib import response
 
 from fastapi import HTTPException
 
-from apps.converter.repositories.repository import  ConvertRepository, RedisRepository
-from apps.converter.schemas.schema import Book, BuyCoin
+from apps.converter.repositories.repository import ConvertRepository, RedisRepository
+from apps.converter.schemas.schema import Book, BuyCoin, ConvertImmediately
 import asyncio_redis
 import sqlalchemy.orm as _orm
-
 
 
 class ConvertService:
     def __init__(self, repository: ConvertRepository) -> None:
         self.repository = repository
 
-    def convert_imidiatly(self, req_body,payload,  db) -> List[Book]:
+    def convert_imidiatly(self, req_body: ConvertImmediately, payload, db) -> List[Book]:
+        req_body.from_coin = req_body.from_coin.upper()
+        req_body.to_coin = req_body.to_coin.upper()
         try:
-            from_coin = self.repository.get_coin(payload.id, req_body.from_coin, db=db)
-            to_coin = self.repository.get_coin(payload.id, req_body.to_coin, db=db)
+            from_coin = self.repository.get_coin(
+                payload["id"], req_body.from_coin, db=db
+            )
+            to_coin = self.repository.get_coin(payload["id"], req_body.to_coin, db=db)
 
             if from_coin.count < req_body.count:
                 raise HTTPException(

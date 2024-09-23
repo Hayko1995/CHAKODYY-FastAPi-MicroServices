@@ -54,10 +54,10 @@ def verefy_user(user: _models.User, db: _orm.Session):
     db.commit()
 
 
-async def delete_user_by_email(email: str, db: _orm.Session):
+async def delete_user_by_id(id: int, db: _orm.Session):
     # Retrieve a user by email from the database
 
-    db.query(_models.User).filter(_models.User.email == email).delete()
+    db.query(_models.User).filter(_models.User.id == id).delete()
     db.commit()
 
 

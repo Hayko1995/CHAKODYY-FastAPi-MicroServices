@@ -19,7 +19,6 @@ class Book(BaseModel):
 
 
 class ConvertImmediately(BaseModel):
-    id: int
     from_coin: str
     to_coin: str
     price: float
@@ -54,10 +53,6 @@ class CoinScema(BaseModel):
 class ReqBody(BaseModel):
     coin_name: str
     coin_count: float
-
-
-class ReqCoins(BaseModel):
-    id: int
 
 
 class LimitRequest(BaseModel):
