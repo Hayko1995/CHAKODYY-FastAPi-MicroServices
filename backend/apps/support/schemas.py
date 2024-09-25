@@ -1,4 +1,5 @@
 import datetime
+from enum import Enum
 from typing import Optional
 import pydantic
 
@@ -11,9 +12,16 @@ class UserBase(pydantic.BaseModel):
         from_attributes = True
 
 
+class TicketEnum(str, Enum):
+    ACTIVE = "active"
+    ERROR = "error"
+    WARNING = "warning"
+    ISSUE = "ISSUE"
+
+
 class Ticket(pydantic.BaseModel):
     id: Optional[int] = -1
-    status: str
+    status: TicketEnum = TicketEnum.ACTIVE
     text: str
 
     class Config:

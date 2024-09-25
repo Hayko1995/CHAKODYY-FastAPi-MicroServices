@@ -95,12 +95,8 @@ class Status(enum.Enum):
 
 class Ticket(_database.Base):
     __tablename__ = "ticket"
+
     id = _sql.Column(_sql.Integer, primary_key=True, index=True)
-    user_id = _sql.Column(_sql.String)
-    text = _sql.Column(_sql.String, unique=True, index=True)
-    status = _sql.Column(
-        _sql.Enum(Status, values_callable=lambda obj: [e.value for e in obj]),
-        nullable=False,
-        default=Status.ACTIVE.value,
-        server_default=Status.ACTIVE.value,
-    )
+    user_id = _sql.Column(_sql.String, unique=False)
+    text = _sql.Column(_sql.String, unique=False)
+    status = _sql.Column(_sql.String, unique=False)

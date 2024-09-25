@@ -31,17 +31,84 @@ def get_db():
         db.close()
 
 
-
 def verefy_user(user: _models.User, db: _orm.Session):
     user.is_verified = True
     db.commit()
 
 
 async def create_ticket(user_id, ticket: Ticket, db: _orm.Session):
-    ticket = _models.Ticket(text=ticket.text, user_id=user_id, status=ticket.status)
-    db.add(ticket)
-    db.commit()
-    return db.query(_models.Ticket).filter(_models.User.id == id).first()
+    try:
+        if ticket.id == -1:
+            print(
+                "🐍 File: support/service.py | Line: 42 | undefined ~ ticket.id",
+                ticket.id,
+            )
+            print("//////////////////")
+            ticket = _models.Ticket(
+                text=ticket.text, user_id=user_id, status=ticket.status
+            )
+            db.add(ticket)
+            db.commit()
+        else:
+            _ = (
+                db.query(_models.Ticket)
+                .filter(
+                    _models.Ticket.id == ticket.id and _models.Ticket.user_id == user_id
+                )
+                .first()
+            )
+            _.status = ticket.status
+            _.text = ticket.text
+            db.add(_)
+            db.commit()
+        return True
+    except:
+        return False
+
+
+async def get_tickets(user_id, ticket: int, db: _orm.Session):
+    try:
+        user = await get_user_by_id(user_id, db)
+        if ticket == -1:
+            if user.is_admin:
+                return db.query(_models.Ticket).all()
+            return (
+                db.query(_models.Ticket)
+                .filter(_models.Ticket.user_id == str(user_id))
+                .all()
+            )
+
+        else:
+            print(ticket)
+            res = (
+                db.query(_models.Ticket)
+                .filter(
+                    _models.Ticket.user_id == str(user_id), _models.Ticket.id == ticket
+                )
+                .first()
+            )
+            return [res]
+
+    except Exception as e:
+        print(e)
+        raise "Server error"
+
+
+async def remove_tickets(user_id, ticket: int, db: _orm.Session):
+    try:
+        user = await get_user_by_id(user_id, db)
+        if not ticket == -1:
+            if user.is_admin:
+                db.query(_models.Ticket).filter(_models.Ticket.id == ticket).delete()
+                db.commit()
+            return {"status": "sucsess"}
+
+        else:
+            return {"status": "unsucsess"}
+
+    except Exception as e:
+        print(e)
+        raise "Server error"
 
 
 async def get_user_by_id(id: int, db: _orm.Session):
@@ -53,6 +120,3 @@ async def delete_user_by_id(id: int, db: _orm.Session):
 
     db.query(_models.User).filter(_models.User.id == id).delete()
     db.commit()
-
-
-

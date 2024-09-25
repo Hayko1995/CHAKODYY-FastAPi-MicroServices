@@ -26,7 +26,7 @@ import jwt
 
 
 router = APIRouter(prefix="/api", tags=["coins"])
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 
 # Defining a basic pydantic class that will be used by fastAPI to validate request body and generate swagger
@@ -75,7 +75,8 @@ async def delete_history(
 
     except:
         raise HTTPException(status_code=response.status_code, detail=response.json())
-    
+
+
 @router.post("/delete_buys", status_code=200)
 async def delete_buys(
     db: _orm.Session = Depends(_database.get_db),

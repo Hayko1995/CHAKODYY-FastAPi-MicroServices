@@ -31,7 +31,7 @@ async def create_ticket(
     db: orm.Session = fastapi.Depends(services.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
-    status = await services.create_ticket(id=payload["id"], ticket=ticket, db=db)
+    status = await services.create_ticket(user_id=payload["id"], ticket=ticket, db=db)
     if status:
         return fastapi.HTTPException(
             status_code=201,
@@ -46,39 +46,19 @@ async def create_ticket(
 
 @support.get("/ticket")
 async def get_ticket(
-    user: schemas.Ticket, db: orm.Session = fastapi.Depends(services.get_db)
+    ticket: int = -1,
+    db: orm.Session = fastapi.Depends(services.get_db),
+    payload: dict = fastapi.Depends(jwt_validation),
 ):
-    db_user = await services.get_user_by_email(email=user.email, db=db)
 
-    if db_user:
-        logging.info("User with that email already exists")
-        raise fastapi.HTTPException(
-            status_code=200, detail="User with that email already exists"
-        )
-
-    user = await services.create_super_user(user=user, db=db)
-
-    return fastapi.HTTPException(
-        status_code=201,
-        detail="User Registered, Please verify email to activate account !",
-    )
+    return await services.get_tickets(user_id=payload["id"], ticket=ticket, db=db)
 
 
 @support.delete("/ticket")
-async def get_ticket(
-    user: schemas.Ticket, db: orm.Session = fastapi.Depends(services.get_db)
+async def delete_ticket(
+    ticket: int = -1,
+    db: orm.Session = fastapi.Depends(services.get_db),
+    payload: dict = fastapi.Depends(jwt_validation),
 ):
-    db_user = await services.get_user_by_email(email=user.email, db=db)
 
-    if db_user:
-        logging.info("User with that email already exists")
-        raise fastapi.HTTPException(
-            status_code=200, detail="User with that email already exists"
-        )
-
-    user = await services.create_super_user(user=user, db=db)
-
-    return fastapi.HTTPException(
-        status_code=201,
-        detail="User Registered, Please verify email to activate account !",
-    )
+    return await services.remove_tickets(user_id=payload["id"], ticket=ticket, db=db)
