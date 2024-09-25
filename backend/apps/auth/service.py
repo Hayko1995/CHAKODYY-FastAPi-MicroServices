@@ -18,7 +18,7 @@ import os
 # Load environment variables
 JWT_SECRET = os.getenv("JWT_SECRET")
 RABBITMQ_URL = os.getenv("RABBITMQ_URL")
-oauth2schema = _security.OAuth2PasswordBearer("/auth/token")
+
 
 
 def create_database():
@@ -136,8 +136,7 @@ async def create_token(user: _models.User):
 
 
 async def get_current_user(
-    db: _orm.Session = _fastapi.Depends(get_db),
-    token: str = _fastapi.Depends(oauth2schema),
+   
 ):
     # Get the current authenticated user from the JWT token
     try:

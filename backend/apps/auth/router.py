@@ -2,6 +2,7 @@ import logging
 import os
 from typing import Any
 from fastapi import Depends, HTTPException
+from fastapi import security
 import pika
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
@@ -23,7 +24,7 @@ from db import models
 
 
 auth = fastapi.APIRouter(prefix="/auth", tags=["auth"])
-oauth2schema = OAuth2PasswordBearer(tokenUrl="/auth/token")
+oauth2schema = security.OAuth2PasswordBearer("/auth/token")
 
 
 @auth.post("/api/users")

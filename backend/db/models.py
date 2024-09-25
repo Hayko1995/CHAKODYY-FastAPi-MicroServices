@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 import datetime as _dt
+import enum
 import sqlalchemy as _sql
 import sqlalchemy.orm as _orm
 from passlib.hash import pbkdf2_sha256
 from db.database import Base, engine
 import db.database as _database
+from sqlalchemy import Enum
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -50,6 +52,12 @@ class BuyHistory(_database.Base):
         orm_mode = True
 
 
+class Status(enum.Enum):
+    DRAFT = "draft"
+    APPROVE = "approve"
+    PUBLISHED = "published"
+
+
 class CoinAccount(_database.Base):
     __tablename__ = "coin_account"
 
@@ -76,3 +84,23 @@ class Convert(_database.Base):
         UUID(as_uuid=True), default=uuid.uuid4, unique=False, nullable=False
     )
     count = _sql.Column(_sql.Integer)
+
+
+class Status(enum.Enum):
+    ACTIVE = "active"
+    ERROR = "error"
+    WARNING = "warning"
+    ISSUE = "ISSUE"
+
+
+class Ticket(_database.Base):
+    __tablename__ = "ticket"
+    id = _sql.Column(_sql.Integer, primary_key=True, index=True)
+    user_id = _sql.Column(_sql.String)
+    text = _sql.Column(_sql.String, unique=True, index=True)
+    status = _sql.Column(
+        _sql.Enum(Status, values_callable=lambda obj: [e.value for e in obj]),
+        nullable=False,
+        default=Status.ACTIVE.value,
+        server_default=Status.ACTIVE.value,
+    )
