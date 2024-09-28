@@ -5,8 +5,8 @@ from urllib import response
 
 from fastapi import HTTPException
 
-from apps.converter.repositories.repository import ConvertRepository, RedisRepository
-from apps.converter.schemas.schema import Book, BuyCoin, ConvertImmediately
+from apps.converter.repository import ConvertRepository, RedisRepository
+from apps.converter.schema import Book, BuyCoin, ConvertImmediately
 import asyncio_redis
 import sqlalchemy.orm as _orm
 

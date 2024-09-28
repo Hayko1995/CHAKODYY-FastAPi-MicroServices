@@ -1,6 +1,6 @@
 import redis
-from apps.converter.repositories.repository import ConvertRepository, RedisRepository
-from apps.converter.services.convert import RedisService, ConvertService
+from apps.converter.repository import ConvertRepository, RedisRepository
+from apps.converter.convert import RedisService, ConvertService
 from dependency_injector import containers, providers
 import asyncio_redis
 

@@ -58,16 +58,23 @@ class Status(enum.Enum):
     PUBLISHED = "published"
 
 
-class CoinAccount(database.Base):
-    __tablename__ = "coin_account"
+class Orders(database.Base):
+    __tablename__ = "orders"
 
-    # id = _sql.Column(_sql.Integer, primary_key=True, index=True)
-    uuid = _sql.Column(
+    order_id = _sql.Column(
         UUID(as_uuid=True), default=uuid.uuid4, primary_key=True, index=True
     )
-    name = _sql.Column(_sql.String, nullable=False)
-    count = _sql.Column(_sql.Float, nullable=False)
+    order_type = _sql.Column(_sql.String, nullable=False)
+    order_direction = _sql.Column(_sql.String, nullable=False)
+    order_coin = _sql.Column(_sql.String, nullable=False)
+    order_quantity = _sql.Column(_sql.Float, nullable=False)
+    order_status = _sql.Column(_sql.Boolean, nullable=False)
+    created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.utcnow)
+    updated_at = _sql.Column(
+        _sql.TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
+    )
     user_id = _sql.Column(_sql.Integer, nullable=False)
+    contest_id = _sql.Column(_sql.Integer, nullable=False)
 
     class Config:
         orm_mode = True
@@ -94,44 +101,6 @@ class Ticket(database.Base):
     text = _sql.Column(_sql.String, unique=False)
     status = _sql.Column(_sql.String, unique=False)
     request_type = _sql.Column(_sql.String, unique=False)
-    created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.utcnow)
-    updated_at = _sql.Column(
-        _sql.TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
-    )
-
-
-class Contest(database.Base):
-    __tablename__ = "contest"
-
-    id = _sql.Column(_sql.Integer, primary_key=True, index=True)
-    title = _sql.Column(_sql.String, unique=False)
-    category = _sql.Column(_sql.String, unique=False)
-    start_time = _sql.Column(_sql.DateTime)
-    end_time = _sql.Column(_sql.DateTime)
-    reward = _sql.Column(_sql.String, unique=False)
-    contest_coins = _sql.Column(_sql.String, unique=False)
-    trading_balance = _sql.Column(_sql.String, unique=False)
-    created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.utcnow)
-    updated_at = _sql.Column(
-        _sql.TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
-    )
-
-
-class ContestParticipant(database.Base):
-    __tablename__ = "contest_participant"
-
-    id = _sql.Column(_sql.Integer, primary_key=True, index=True)
-    participant = _sql.Column(_sql.String, unique=False)
-    joining_time = _sql.Column(_sql.DateTime)
-    is_withdrawn = _sql.Column(_sql.Boolean)
-    withdraw_time = _sql.Column(_sql.DateTime)
-
-
-class CoinSet(database.Base):
-    __tablename__ = "coin_set"
-
-    id = _sql.Column(_sql.Integer, primary_key=True, index=True)
-    coins = _sql.Column(_sql.String, unique=False)
     created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.utcnow)
     updated_at = _sql.Column(
         _sql.TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()

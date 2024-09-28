@@ -6,10 +6,11 @@ from fastapi import FastAPI, BackgroundTasks, security
 from abc import ABC
 from db import models as _models
 
-from apps.converter.services.transactions import Transaction, WebSocketClient
-from apps.converter.routing.converter import router as converter
+from apps.converter.transactions import Transaction, WebSocketClient
+from apps.converter.converter import router as converter
 from apps.auth.router import auth
 from apps.support.router import support
+from apps.contest.router import contest
 from dotenv import load_dotenv
 import os
 
@@ -20,6 +21,7 @@ app = FastAPI(openapi_url="/core/openapi.json", docs_url="/docs")
 app.include_router(converter)
 app.include_router(auth)
 app.include_router(support)
+app.include_router(contest)
 logging.basicConfig(level=logging.INFO)
 _models.Base.metadata.create_all(_models.engine)
 

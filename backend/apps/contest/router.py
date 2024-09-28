@@ -3,7 +3,6 @@ import os
 from typing import Any
 from fastapi import Depends, HTTPException
 import pika
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 import fastapi
 from fastapi import BackgroundTasks
@@ -11,28 +10,26 @@ import uvicorn
 import sqlalchemy.orm as orm
 
 
-from apps.support import schemas
-import apps.support.service as services
+from apps.contest import schemas
+import apps.contest.service as services
 
 from datetime import datetime
 
 
 from apps.converter.converter import jwt_validation
-from db import models
 import db.database as database
 
 
-support = fastapi.APIRouter(prefix="/support", tags=["support"])
-oauth2schema = OAuth2PasswordBearer(tokenUrl="/auth/token")
+contest = fastapi.APIRouter(prefix="/contest", tags=["contest"])
 
 
-@support.post("/ticket")
-async def create_ticket(
-    ticket: schemas.Ticket,
+@contest.post("/create")
+async def create_contest(
+    contest: schemas.CreateContest,
     db: orm.Session = fastapi.Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
-    status = await services.create_ticket(user_id=payload["id"], ticket=ticket, db=db)
+    status = await services.create_contest(contest=contest, db=db)
     if status:
         return fastapi.HTTPException(
             status_code=201,
@@ -45,8 +42,8 @@ async def create_ticket(
         )
 
 
-@support.get("/ticket")
-async def get_ticket(
+@contest.post("/join")
+async def get_contest(
     ticket: int = -1,
     db: orm.Session = fastapi.Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
@@ -55,8 +52,8 @@ async def get_ticket(
     return await services.get_tickets(user_id=payload["id"], ticket=ticket, db=db)
 
 
-@support.delete("/ticket")
-async def delete_ticket(
+@contest.post("/exit")
+async def delete_contest(
     ticket: int = -1,
     db: orm.Session = fastapi.Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),

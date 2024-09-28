@@ -3,13 +3,13 @@ import json
 from fastapi import Depends
 import websocket
 import db.models as _models
-import db.database as _database
+import db.database as database
 from ast import literal_eval
 import sqlalchemy.orm as _orm
 
 from depends import get_redis_service
-from apps.converter.routing.converter import convert_Immediately, limit
-from apps.converter.services.convert import RedisService
+from apps.converter.converter import convert_Immediately, limit
+from apps.converter.convert import RedisService
 
 import sqlalchemy as db
 import websocket
@@ -25,7 +25,7 @@ class Transaction(ABC):
 
     def __init__(self) -> None:
         self.redis = get_redis_service()
-        self.engine = db.create_engine(_database.DATABASE_URL)
+        self.engine = db.create_engine(database.DATABASE_URL)
         self.connection = self.engine.connect()
 
     def on_message(self, ws, message):
@@ -95,7 +95,7 @@ class WebSocketClient(ABC):
             on_close=self.on_close,
         )
         self.redis = get_redis_service()
-        self.engine = db.create_engine(_database.DATABASE_URL)
+        self.engine = db.create_engine(database.DATABASE_URL)
         self.connection = self.engine.connect()
         
         self.ws.on_open = self.on_open

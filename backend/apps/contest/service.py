@@ -7,6 +7,7 @@ import fastapi.security as _security
 from passlib.hash import pbkdf2_sha256
 from apps.notification.email_service import notification
 from apps.support.schemas import Ticket
+from apps.contest.schemas import CreateContest
 import db.database as database
 import apps.auth.schemas as _schemas
 import db.models as _models
@@ -18,29 +19,35 @@ import os
 
 
 
-def verefy_user(user: _models.User, db: _orm.Session):
-    user.is_verified = True
-    db.commit()
 
-
-async def create_ticket(user_id, ticket: Ticket, db: _orm.Session):
+async def create_contest(contest: CreateContest, db: _orm.Session):
     try:
-        if ticket.id == -1:
-            ticket = _models.Ticket(
-                text=ticket.text, user_id=user_id, status=ticket.status
+        if contest.id == -1:
+            contest = _models.Contest(
+                title=contest.title,
+                category=contest.category,
+                start_time=contest.start_time,
+                end_time=contest.end_time,
+                reward=contest.reward,
+                contest_coins=contest.contest_coins,
+                trading_balance=contest.trading_balance,
             )
-            db.add(ticket)
+            db.add(contest)
             db.commit()
         else:
             _ = (
-                db.query(_models.Ticket)
-                .filter(
-                    _models.Ticket.id == ticket.id and _models.Ticket.user_id == user_id
-                )
+                db.query(_models.Contest)
+                .filter(_models.Contest.id == contest.id)
                 .first()
             )
-            _.status = ticket.status
-            _.text = ticket.text
+            _.title = contest.title
+            _.category = contest.category
+            _.start_time = contest.start_time
+            _.end_time = contest.end_time
+            _.reward = contest.reward
+            _.contest_coins = contest.contest_coins
+            _.trading_balance = (contest.trading_balance,)
+
             db.add(_)
             db.commit()
         return True
@@ -79,12 +86,9 @@ async def get_tickets(user_id, ticket: int, db: _orm.Session):
 async def remove_tickets(user_id, ticket: int, db: _orm.Session):
     try:
         user = await get_user_by_id(user_id, db)
-        if ticket != -1:
+        if not ticket == -1:
             if user.is_admin:
-                model = (
-                    db.query(_models.Ticket).filter(_models.Ticket.id == ticket).first()
-                )
-                model.status = "resolved"
+                db.query(_models.Ticket).filter(_models.Ticket.id == ticket).delete()
                 db.commit()
             return {"status": "sucsess"}
 

@@ -14,12 +14,13 @@ import sqlalchemy.orm as orm
 
 from apps.auth import schemas
 import apps.auth.service as _services
+import db.database as database
 
 from datetime import datetime
 
 from email_validator import validate_email, EmailNotValidError
 
-from apps.converter.routing.converter import jwt_validation
+from apps.converter.converter import jwt_validation
 from db import models
 
 
@@ -29,7 +30,7 @@ oauth2schema = security.OAuth2PasswordBearer("/auth/token")
 
 @auth.post("/api/users")
 async def create_user(
-    user: schemas.UserCreate, db: orm.Session = fastapi.Depends(_services.get_db)
+    user: schemas.UserCreate, db: orm.Session = fastapi.Depends(database.get_db)
 ):
     db_user = await _services.get_user_by_email(email=user.email, db=db)
 
@@ -49,7 +50,7 @@ async def create_user(
 
 @auth.post("/api/super_users")
 async def create_user(
-    user: schemas.UserCreate, db: orm.Session = fastapi.Depends(_services.get_db)
+    user: schemas.UserCreate, db: orm.Session = fastapi.Depends(database.get_db)
 ):
     db_user = await _services.get_user_by_email(email=user.email, db=db)
 
@@ -67,12 +68,12 @@ async def create_user(
     )
 
 
-@auth.post("/api/delete_user")  # todo chenage to JWT verefication
+@auth.post("/api/delete_user")
 async def delete_user(
-    db: orm.Session = fastapi.Depends(_services.get_db),
+    db: orm.Session = fastapi.Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
-    await _services.delete_user_by_id(id=payload['id'], db=db)
+    await _services.delete_user_by_id(id=payload["id"], db=db)
 
     return fastapi.HTTPException(
         status_code=200,
@@ -89,7 +90,7 @@ async def check_api():
 @auth.post("/token")  # marge with "/api/token"
 async def swagger_login(
     user_data: OAuth2PasswordRequestForm = Depends(),
-    db: orm.Session = fastapi.Depends(_services.get_db),
+    db: orm.Session = fastapi.Depends(database.get_db),
 ) -> Any:
 
     try:
@@ -128,7 +129,7 @@ async def swagger_login(
 async def generate_token(
     # form_data: _security.OAuth2PasswordRequestForm = fastapi.Depends(),
     user_data: schemas.GenerateUserToken,
-    db: orm.Session = fastapi.Depends(_services.get_db),
+    db: orm.Session = fastapi.Depends(database.get_db),
 ):
 
     try:
@@ -162,7 +163,7 @@ async def generate_token(
     return await _services.create_token(user=user)
 
 
-@auth.get("/api/users/me", response_model=schemas.User, tags=["User Auth"])
+@auth.get("/api/users/me", response_model=schemas.User)
 async def get_user(user: schemas.User = fastapi.Depends(_services.get_current_user)):
     return user
 
@@ -177,7 +178,7 @@ def write_notification(email: str, message=""):
 async def send_otp_mail(
     userdata: schemas.GenerateOtp,
     background_tasks: BackgroundTasks,
-    db: orm.Session = fastapi.Depends(_services.get_db),
+    db: orm.Session = fastapi.Depends(database.get_db),
 ):
     user = await _services.get_user_by_email(email=userdata.email, db=db)
 
@@ -191,7 +192,6 @@ async def send_otp_mail(
     otp = _services.generate_otp()
 
     background_tasks.add_task(_services.send_otp, userdata.email, otp)
-    # _services.send_otp(userdata.email, otp, channel) //todo change
 
     # Store the OTP in the database
     user.otp = otp
@@ -204,7 +204,7 @@ async def send_otp_mail(
 
 @auth.post("/api/users/verify_otp")
 async def verify_otp(
-    userdata: schemas.VerifyOtp, db: orm.Session = fastapi.Depends(_services.get_db)
+    userdata: schemas.VerifyOtp, db: orm.Session = fastapi.Depends(database.get_db)
 ):
     user = await _services.get_user_by_email(email=userdata.email, db=db)
 
@@ -236,7 +236,8 @@ async def verify_otp(
 @auth.post("/api/users/forgot_password")  # add Test
 async def forgot_password(
     userdata: schemas.ForgotPassword,
-    db: orm.Session = fastapi.Depends(_services.get_db),
+    background_tasks: BackgroundTasks,
+    db: orm.Session = fastapi.Depends(database.get_db),
 ):
     user = await _services.get_user_by_email(email=userdata.email, db=db)
 
@@ -246,7 +247,7 @@ async def forgot_password(
     # Generate and send OTP
     otp = _services.generate_otp()
 
-    # _services.send_otp(userdata.email, otp, channel) //todo change
+    background_tasks.add_task(_services.send_otp, userdata.email, otp)
 
     # Store the OTP in the database
     user.otp = otp
@@ -260,7 +261,7 @@ async def forgot_password(
 @auth.post("/api/users/reset_password")  # add Test
 async def reset_password(
     userdata: schemas.ResetPassword,
-    db: orm.Session = fastapi.Depends(_services.get_db),
+    db: orm.Session = fastapi.Depends(database.get_db),
 ):
     user = await _services.get_user_by_email(email=userdata.email, db=db)
 
@@ -268,9 +269,7 @@ async def reset_password(
         raise fastapi.HTTPException(status_code=404, detail="User not found")
 
     # Verify OTP
-    if (
-        not user.otp or user.otp != userdata.otp
-    ):  # todo add here created time compare to now time  if it is greater than 30 mins ingore otp
+    if not user.otp or user.otp != userdata.otp:
         raise fastapi.HTTPException(status_code=400, detail="Invalid OTP")
 
     # OTP expiration check.

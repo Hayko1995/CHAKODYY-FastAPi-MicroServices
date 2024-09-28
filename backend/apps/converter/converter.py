@@ -4,7 +4,7 @@ import uuid
 import fastapi
 
 from apps.auth.service import JWT_SECRET
-import db.database as _database
+import db.database as database
 import db.models as _models
 import sqlalchemy.orm as _orm
 
@@ -13,12 +13,12 @@ from fastapi.responses import Response
 from depends import get_redis_service, get_convert_service
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
-from apps.converter.schemas.schema import (
+from apps.converter.schema import (
     ConvertImmediately,
     LimitRequest,
     ReqBody,
 )
-from apps.converter.services.convert import RedisService, ConvertService
+from apps.converter.convert import RedisService, ConvertService
 from dependency_injector import containers, providers
 from dependency_injector.wiring import Provide, inject
 from typing import List
@@ -42,7 +42,7 @@ async def jwt_validation(token: str = fastapi.Depends(oauth2_scheme)):
 
 @router.post("/get_buy_history", status_code=200)
 async def buy_coin(
-    db: _orm.Session = Depends(_database.get_db),
+    db: _orm.Session = Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
     try:
@@ -63,7 +63,7 @@ async def buy_coin(
 
 @router.post("/delete_history", status_code=200)
 async def delete_history(
-    db: _orm.Session = Depends(_database.get_db),
+    db: _orm.Session = Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
     try:
@@ -79,7 +79,7 @@ async def delete_history(
 
 @router.post("/delete_buys", status_code=200)
 async def delete_buys(
-    db: _orm.Session = Depends(_database.get_db),
+    db: _orm.Session = Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
     try:
@@ -97,7 +97,7 @@ async def delete_buys(
 async def buy_coin(
     req_body: ReqBody,
     payload: dict = fastapi.Depends(jwt_validation),
-    db: _orm.Session = Depends(_database.get_db),
+    db: _orm.Session = Depends(database.get_db),
 ):
     req_body.coin_name = req_body.coin_name.upper()
     try:
@@ -145,7 +145,7 @@ async def buy_coin(
 @router.post("/convert_Immediately", status_code=200)
 def convert_Immediately(
     req_body: ConvertImmediately,
-    db: _orm.Session = Depends(_database.get_db),
+    db: _orm.Session = Depends(database.get_db),
     service: ConvertService = Depends(get_convert_service),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
@@ -161,7 +161,7 @@ def convert_Immediately(
 
 @router.post("/get_coins", status_code=200)
 async def buy_coin(
-    db: _orm.Session = Depends(_database.get_db),
+    db: _orm.Session = Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
 
