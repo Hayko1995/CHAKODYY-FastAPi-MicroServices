@@ -17,7 +17,8 @@ import apps.support.service as services
 from datetime import datetime
 
 
-from apps.converter.converter import jwt_validation
+
+from apps.auth.router import jwt_validation
 from db import models
 import db.database as database
 

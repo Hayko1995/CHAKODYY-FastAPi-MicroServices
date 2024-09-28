@@ -10,6 +10,7 @@ import fastapi
 from fastapi import BackgroundTasks
 import uvicorn
 import sqlalchemy.orm as orm
+import jwt
 
 
 from apps.auth import schemas
@@ -20,31 +21,40 @@ from datetime import datetime
 
 from email_validator import validate_email, EmailNotValidError
 
-from apps.converter.converter import jwt_validation
 from db import models
 
+JWT_SECRET = os.getenv("JWT_SECRET")
 
 auth = fastapi.APIRouter(prefix="/auth", tags=["auth"])
-oauth2schema = security.OAuth2PasswordBearer("/auth/token")
+oauth2_scheme = security.OAuth2PasswordBearer("/auth/token")
+
+
+async def jwt_validation(token: str = fastapi.Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        return payload
+    except UnicodeError:
+        raise HTTPException(status_code=401, detail="Invalid JWT token")
 
 
 @auth.post("/api/users")
 async def create_user(
     user: schemas.UserCreate, db: orm.Session = fastapi.Depends(database.get_db)
 ):
+    user.email = user.email.lower()
     db_user = await _services.get_user_by_email(email=user.email, db=db)
 
     if db_user:
-        logging.info("User with that email already exists")
+        logging.info("User with that email already exists ")
         raise fastapi.HTTPException(
-            status_code=200, detail="User with that email already exists"
+            status_code=200, detail="User with that email already exists "
         )
 
     user = await _services.create_user(user=user, db=db)
 
     return fastapi.HTTPException(
         status_code=201,
-        detail="User Registered, Please verify email to activate account !",
+        detail="User  Registered, Please verify email to activate account !",
     )
 
 
@@ -52,6 +62,7 @@ async def create_user(
 async def create_user(
     user: schemas.UserCreate, db: orm.Session = fastapi.Depends(database.get_db)
 ):
+    user.email = user.email.lower()
     db_user = await _services.get_user_by_email(email=user.email, db=db)
 
     if db_user:
@@ -98,7 +109,7 @@ async def swagger_login(
         email = emailinfo.normalized
 
     except EmailNotValidError as e:
-
+        print(e)
         email = (
             db.query(models.User).filter_by(username=user_data.username).first().email
         )
@@ -117,8 +128,8 @@ async def swagger_login(
         )
 
     if not user:
-        logging.info("Invalid Credentials")
-        raise fastapi.HTTPException(status_code=401, detail="Invalid Credentials")
+        logging.info("Invalid  Credentials")
+        raise fastapi.HTTPException(status_code=401, detail="Invalid  Credentials")
 
     logging.info("JWT Token Generated")
 
@@ -137,7 +148,7 @@ async def generate_token(
         email = emailinfo.normalized
 
     except EmailNotValidError as e:
-
+        print(e)
         email = (
             db.query(models.User).filter_by(username=user_data.username).first().email
         )
@@ -183,7 +194,7 @@ async def send_otp_mail(
     user = await _services.get_user_by_email(email=userdata.email, db=db)
 
     if not user:
-        raise fastapi.HTTPException(status_code=404, detail="User not found")
+        raise fastapi.HTTPException(status_code=404, detail="User not  found")
 
     if user.is_verified:
         raise fastapi.HTTPException(status_code=400, detail="User is already verified")
@@ -209,7 +220,7 @@ async def verify_otp(
     user = await _services.get_user_by_email(email=userdata.email, db=db)
 
     if not user:
-        raise fastapi.HTTPException(status_code=404, detail="User not found")
+        raise fastapi.HTTPException(status_code=404, detail="User  not found")
 
     if not user.otp or user.otp != userdata.otp:
         raise fastapi.HTTPException(status_code=400, detail="Invalid OTP")

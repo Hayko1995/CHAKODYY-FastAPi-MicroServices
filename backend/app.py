@@ -7,7 +7,7 @@ from abc import ABC
 from db import models as _models
 
 from apps.converter.transactions import Transaction, WebSocketClient
-from apps.converter.converter import router as converter
+from apps.converter.router import router as converter
 from apps.auth.router import auth
 from apps.support.router import support
 from apps.contest.router import contest

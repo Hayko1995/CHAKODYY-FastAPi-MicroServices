@@ -8,7 +8,7 @@ from ast import literal_eval
 import sqlalchemy.orm as _orm
 
 from depends import get_redis_service
-from apps.converter.converter import convert_Immediately, limit
+from apps.converter.router import convert_immediately
 from apps.converter.convert import RedisService
 
 import asyncio
@@ -54,10 +54,10 @@ class Transaction(ABC):
                         if "stop_convert" in transaction:
                             transaction["price"] = transaction["stop_convert"]
                             del transaction["stop_convert"]
-                            limit(transaction)
+                            # limit_buy(transaction) # todo add buy or cell
                         else:
                             transaction["price_coin"] = current_price
-                            convert_Immediately(transaction)
+                            convert_immediately(transaction)
 
         return {"status": "done"}
 
@@ -71,25 +71,35 @@ class Transaction(ABC):
 
                 for ticker in data_json:
                     if ticker["s"] == "BTCUSDT":
-                        print(f"BTC/USDT Price: {ticker['c']}")
+                        pass
+                        # print(f"BTC/USDT Price: {ticker['c']}")
                     elif ticker["s"] == "ETHUSDT":
-                        print(f"ETH/USDT Price: {ticker['c']}")
+                        pass
+                        # print(f"ETH/USDT Price: {ticker['c']}")
                     elif ticker["s"] == "SOLUSDT":
-                        print(f"SOL/USDT Price: {ticker['c']}")
+                        pass
+                        # print(f"SOL/USDT Price: {ticker['c']}")
                     elif ticker["s"] == "NEARUSDT":
-                        print(f"NEAR/USDT Price: {ticker['c']}")
+                        # print(f"NEAR/USDT Price: {ticker['c']}")
+                        pass
                     elif ticker["s"] == "MATICUSDT":
-                        print(f"MATI/CUSDT Price: {ticker['c']}")
+                        # print(f"MATI/CUSDT Price: {ticker['c']}")
+                        pass
                     elif ticker["s"] == "TRXUSDT":
-                        print(f"TRX/USDT Price: {ticker['c']}")
+                        # print(f"TRX/USDT Price: {ticker['c']}")
+                        pass
                     elif ticker["s"] == "PEOPLEUSDT":
-                        print(f"PEOPLE/USDT Price: {ticker['c']}")
+                        # print(f"PEOPLE/USDT Price: {ticker['c']}")
+                        pass
                     elif ticker["s"] == "IOUSDT":
-                        print(f"IO/USDT Price: {ticker['c']}")
+                        # print(f"IO/USDT Price: {ticker['c']}")
+                        pass
                     elif ticker["s"] == "DOGEUSDT":
-                        print(f"DOGE/USDT Price: {ticker['c']}")
+                        # print(f"DOGE/USDT Price: {ticker['c']}")
+                        pass
                     elif ticker["s"] == "BNBUSDT":
-                        print(f"BNB/USDT Price: {ticker['c']}")
+                        # print(f"BNB/USDT Price: {ticker['c']}")
+                        pass
 
     def run(self):
         loop = asyncio.new_event_loop()
@@ -134,10 +144,10 @@ class WebSocketClient(ABC):
                         if "stop_convert" in transaction:
                             transaction["price"] = transaction["stop_convert"]
                             del transaction["stop_convert"]
-                            limit(transaction)
+                            # limit(transaction)
                         else:
                             transaction["price_coin"] = current_price
-                            convert_Immediately(transaction)
+                            convert_immediately(transaction)
 
         return {"status": "done"}
 

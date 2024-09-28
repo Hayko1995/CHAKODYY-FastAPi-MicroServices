@@ -3,41 +3,22 @@ import uuid
 
 import fastapi
 
-from apps.auth.service import JWT_SECRET
+from apps.auth.router import jwt_validation
 import db.database as database
 import db.models as _models
 import sqlalchemy.orm as _orm
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.responses import Response
+from fastapi import APIRouter, Depends, HTTPException
 from depends import get_redis_service, get_convert_service
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel
 from apps.converter.schema import (
     ConvertImmediately,
     LimitRequest,
     ReqBody,
 )
 from apps.converter.convert import RedisService, ConvertService
-from dependency_injector import containers, providers
-from dependency_injector.wiring import Provide, inject
-from typing import List
-import jwt
 
 
-router = APIRouter(prefix="/api", tags=["coins"])
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
-
-
-# Defining a basic pydantic class that will be used by fastAPI to validate request body and generate swagger
-
-
-async def jwt_validation(token: str = fastapi.Depends(oauth2_scheme)):
-    try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-        return payload
-    except UnicodeError:
-        raise HTTPException(status_code=401, detail="Invalid JWT token")
+router = APIRouter(prefix="/api", tags=["converter"])
 
 
 @router.post("/get_buy_history", status_code=200)
@@ -57,7 +38,8 @@ async def buy_coin(
         res = {"status": "success", "buys": results}
         return res
 
-    except:
+    except Exception as e:
+        print(e)
         raise HTTPException(status_code=response.status_code, detail=response.json())
 
 
@@ -73,7 +55,8 @@ async def delete_history(
         ).delete()
         db.commit()
 
-    except:
+    except Exception as e:
+        print(e)
         raise HTTPException(status_code=response.status_code, detail=response.json())
 
 
@@ -89,7 +72,8 @@ async def delete_buys(
         ).delete()
         db.commit()
 
-    except:
+    except Exception as e:
+        print(e)
         raise HTTPException(status_code=response.status_code, detail=response.json())
 
 
@@ -143,7 +127,7 @@ async def buy_coin(
 
 
 @router.post("/convert_Immediately", status_code=200)
-def convert_Immediately(
+def convert_immediately(
     req_body: ConvertImmediately,
     db: _orm.Session = Depends(database.get_db),
     service: ConvertService = Depends(get_convert_service),
@@ -152,8 +136,8 @@ def convert_Immediately(
     try:
         return service.convert_imidiatly(req_body, payload, db=db)
 
-    except:
-        # raise HTTPException(status_code=response.status_code, detail=response.json())
+    except Exception as e:
+        print(e)
         return {
             "status": "unsuccess",
         }
@@ -183,12 +167,26 @@ async def buy_coin(
 
 
 @router.post(
-    "/limit",
+    "/limit_buy",
     responses={400: {"description": "Bad request"}},
 )
-def limit(
+def limit_buy(
     request: LimitRequest,
     service: RedisService = Depends(get_redis_service),
+):
+    
+    service.set_value(request.price_coin, request.convert)
+    return {"status": "sucess"}
+
+
+@router.post(
+    "/limit_cell",
+    responses={400: {"description": "Bad request"}},
+)
+def limit_cell(
+    request: LimitRequest,
+    service: RedisService = Depends(get_redis_service),
+    payload: dict = fastapi.Depends(jwt_validation),
 ):
     service.set_value(request.price_coin, request.convert)
     return {"status": "sucess"}
@@ -199,6 +197,9 @@ def limit(
     responses={400: {"description": "Bad request"}},
     description="Redis",
 )
-async def getRedis(service: RedisService = Depends(get_redis_service)):
+async def get_redis(
+    service: RedisService = Depends(get_redis_service),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
     value = service.get_value("my_key")
     return {"result": value}

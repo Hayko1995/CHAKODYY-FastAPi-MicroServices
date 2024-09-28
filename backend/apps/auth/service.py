@@ -6,7 +6,7 @@ import fastapi as _fastapi
 import fastapi.security as _security
 from passlib.hash import pbkdf2_sha256
 from apps.notification.email_service import notification
-import db.database as database
+import db.database as _database
 import apps.auth.schemas as _schemas
 import db.models as _models
 import random
@@ -19,11 +19,9 @@ import os
 JWT_SECRET = os.getenv("JWT_SECRET")
 oauth2schema = _security.OAuth2PasswordBearer("/auth/token")
 
-
 def create_database():
     # Create database tables
-    return database.Base.metadata.create_all(bind=database.engine)
-
+    return _database.Base.metadata.create_all(bind=_database.engine)
 
 async def get_user_by_email(email: str, db: _orm.Session):
     # Retrieve a user by email from the database
@@ -126,7 +124,7 @@ async def create_token(user: _models.User):
 
 
 async def get_current_user(
-    db: _orm.Session = _fastapi.Depends(database.get_db),
+    db: _orm.Session = _fastapi.Depends(_database.get_db),
     token: str = _fastapi.Depends(oauth2schema),
 ):
     # Get the current authenticated user from the JWT token
@@ -144,6 +142,19 @@ async def get_current_user(
 def generate_otp():
     # Generate a random OTP
     return str(random.randint(100000, 999999))  # change to time tocken
+
+
+def connect_to_rabbitmq():
+    # Connect to RabbitMQ
+    while True:
+        try:
+            connection = pika.BlockingConnection(
+                pika.ConnectionParameters(RABBITMQ_URL)
+            )
+            return connection
+        except pika.exceptions.AMQPConnectionError:
+            print("Failed to connect to RabbitMQ. Retrying in 5 seconds...")
+            time.sleep(5)
 
 
 def send_otp(email, otp):

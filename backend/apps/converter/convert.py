@@ -15,7 +15,9 @@ class ConvertService:
     def __init__(self, repository: ConvertRepository) -> None:
         self.repository = repository
 
-    def convert_imidiatly(self, req_body: ConvertImmediately, payload, db) -> List[Book]:
+    def convert_imidiatly(
+        self, req_body: ConvertImmediately, payload, db
+    ):
         req_body.from_coin = req_body.from_coin.upper()
         req_body.to_coin = req_body.to_coin.upper()
         try:
@@ -36,12 +38,11 @@ class ConvertService:
             db.flush()
             db.commit()
             return req_body
-        except:
-            # raise HTTPException(status_code=response.status_code, detail=response.json())
+        except Exception as e:
+            print(e)
             return {
                 "status": "unsuccess",
             }
-        return result
 
     async def buy_coin(self, coin_uuid, coin_name, coin_count) -> BuyCoin:
         result = await self.repository.buy_coin(coin_uuid, coin_name, coin_count)

@@ -56,5 +56,5 @@ class ReqBody(BaseModel):
 
 
 class LimitRequest(BaseModel):
-    price_coin: float
+    coins_pare: str
     convert: dict

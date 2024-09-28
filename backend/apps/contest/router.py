@@ -16,7 +16,8 @@ import apps.contest.service as services
 from datetime import datetime
 
 
-from apps.converter.converter import jwt_validation
+
+from apps.auth.router import jwt_validation
 import db.database as database
 
 
