@@ -11,6 +11,10 @@ from depends import get_redis_service
 from apps.converter.converter import convert_Immediately, limit
 from apps.converter.convert import RedisService
 
+import asyncio
+import websockets
+import json
+
 import sqlalchemy as db
 import websocket
 
@@ -30,12 +34,11 @@ class Transaction(ABC):
 
     def on_message(self, ws, message):
         global current_price
-        tolerance = 0.5
         data = json.loads(message)
         current_price = float(data["p"])
 
         byte_literals = self.redis.get_keys()
-        if not byte_literals == []:
+        if byte_literals != []:
             string_values = [x.decode("utf-8") for x in byte_literals]
 
             # Step 2: Convert to floats
@@ -45,10 +48,9 @@ class Transaction(ABC):
             for value in smaller_values:
                 transactions = self.redis.get_value(str(value))
                 self.redis.delete_value(str(value))
-                if not transactions is None:
+                if transactions is not None:
                     transactions = literal_eval(transactions.decode("utf8"))
                     for transaction in transactions:
-                        # transaction = json.dumps(data, indent=4, sort_keys=True)
                         if "stop_convert" in transaction:
                             transaction["price"] = transaction["stop_convert"]
                             del transaction["stop_convert"]
@@ -59,31 +61,40 @@ class Transaction(ABC):
 
         return {"status": "done"}
 
-    def on_error(self, ws, error):
-        # print(f"Error: {error}")
-        pass
+    async def binance_ws(self):
+        url = "wss://stream.binance.com:9443/ws/!ticker@arr"
 
-    def on_close(self, ws):
-        print("WebSocket closed")
+        async with websockets.connect(url) as ws:
+            while True:
+                data = await ws.recv()
+                data_json = json.loads(data)
 
-    def on_open(self, ws, error):
-        symbols = ["btcusdt"]
-        params = []
-        for i in range(len(symbols)):
-            params.append(f"{symbols[i]}@aggTrade")
+                for ticker in data_json:
+                    if ticker["s"] == "BTCUSDT":
+                        print(f"BTC/USDT Price: {ticker['c']}")
+                    elif ticker["s"] == "ETHUSDT":
+                        print(f"ETH/USDT Price: {ticker['c']}")
+                    elif ticker["s"] == "SOLUSDT":
+                        print(f"SOL/USDT Price: {ticker['c']}")
+                    elif ticker["s"] == "NEARUSDT":
+                        print(f"NEAR/USDT Price: {ticker['c']}")
+                    elif ticker["s"] == "MATICUSDT":
+                        print(f"MATI/CUSDT Price: {ticker['c']}")
+                    elif ticker["s"] == "TRXUSDT":
+                        print(f"TRX/USDT Price: {ticker['c']}")
+                    elif ticker["s"] == "PEOPLEUSDT":
+                        print(f"PEOPLE/USDT Price: {ticker['c']}")
+                    elif ticker["s"] == "IOUSDT":
+                        print(f"IO/USDT Price: {ticker['c']}")
+                    elif ticker["s"] == "DOGEUSDT":
+                        print(f"DOGE/USDT Price: {ticker['c']}")
+                    elif ticker["s"] == "BNBUSDT":
+                        print(f"BNB/USDT Price: {ticker['c']}")
 
-        ws.send(json.dumps({"method": "SUBSCRIBE", "params": params, "id": 1}))
-
-    def run_websocket(self):
-
-        self.ws = websocket.WebSocketApp(
-            "ws://localhost:5005/ws",
-            on_message=self.on_message,
-            on_error=self.on_error,
-            on_close=self.on_close,
-        )
-        self.ws.on_open = self.on_open
-        self.ws.run_forever()
+    def run(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(self.binance_ws())
 
 
 class WebSocketClient(ABC):
@@ -97,18 +108,17 @@ class WebSocketClient(ABC):
         self.redis = get_redis_service()
         self.engine = db.create_engine(database.DATABASE_URL)
         self.connection = self.engine.connect()
-        
+
         self.ws.on_open = self.on_open
 
     def on_message(self, ws, message):
-        
+
         global current_price
-        tolerance = 0.5
         data = json.loads(message)
         current_price = float(data["p"])
 
         byte_literals = self.redis.get_keys()
-        if not byte_literals == []:
+        if byte_literals != []:
             string_values = [x.decode("utf-8") for x in byte_literals]
 
             # Step 2: Convert to floats
@@ -118,10 +128,9 @@ class WebSocketClient(ABC):
             for value in smaller_values:
                 transactions = self.redis.get_value(str(value))
                 self.redis.delete_value(str(value))
-                if not transactions is None:
+                if transactions is not None:
                     transactions = literal_eval(transactions.decode("utf8"))
                     for transaction in transactions:
-                        # transaction = json.dumps(data, indent=4, sort_keys=True)
                         if "stop_convert" in transaction:
                             transaction["price"] = transaction["stop_convert"]
                             del transaction["stop_convert"]
@@ -131,8 +140,6 @@ class WebSocketClient(ABC):
                             convert_Immediately(transaction)
 
         return {"status": "done"}
-
-
 
     def on_error(self, ws, error):
         print(f"Error: {error}")

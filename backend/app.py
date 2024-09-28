@@ -29,10 +29,10 @@ _models.Base.metadata.create_all(_models.engine)
 @app.on_event("startup")
 def start_websocket():
     # Run the WebSocket in a separate thread
-    if os.environ.get("DEBUG"):
+    if os.environ.get("DEBUG") == 'TRUE':
         threading.Thread(target=WebSocketClient().start, daemon=True).start()
     else:
-        threading.Thread(target=Transaction().run_websocket, daemon=True).start()
+        threading.Thread(target=Transaction().run, daemon=True).start()
 
 
 # # Start the FastAPI server
