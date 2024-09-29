@@ -6,7 +6,7 @@ from urllib import response
 from fastapi import HTTPException
 
 from apps.converter.repository import ConvertRepository, RedisRepository
-from apps.converter.schema import Book, BuyCoin, ConvertImmediately, SetCoin
+from apps.converter.schema import Book, BuyCoin, Market, SetCoin
 import asyncio_redis
 import sqlalchemy.orm as _orm
 
@@ -18,25 +18,60 @@ class ConvertService:
     def __init__(self, repository: ConvertRepository) -> None:
         self.repository = repository
 
-    def convert_imidiatly(self, req_body: ConvertImmediately, payload, db):
-        req_body.from_coin = req_body.from_coin.upper()
-        req_body.to_coin = req_body.to_coin.upper()
-        try:
-            from_coin = self.repository.get_coin(
-                payload["id"], req_body.from_coin, db=db
-            )
-            to_coin = self.repository.get_coin(payload["id"], req_body.to_coin, db=db)
+    def market_buy(self, req_body: Market, payload, db):
 
-            if from_coin.count < req_body.count:
-                raise HTTPException(
-                    status_code=response.status_code, detail=response.json()
-                )
-            from_coin.count = from_coin.count - req_body.count
+        from_coin = req_body.coin_set[: req_body.coin_set.index("/")].upper()
+        to_coin = req_body.coin_set[req_body.coin_set.index("/") + 1 :].upper()
+
+        try:
+            from_coin = self.repository.get_coin(payload["id"], from_coin, db=db)
+            if from_coin == None:
+                return {"status": "not found from coin "}
+
+            to_coin = self.repository.get_coin(payload["id"], to_coin, db=db)
+
+            if to_coin == None:
+                return {"status": "not found to coin "}
+
+            if float(to_coin.count) <= float(req_body.count) * float(req_body.price):
+                return {"status": "not enugth coins"}
 
             to_coin.count = float(
                 float(to_coin.count) + float(req_body.count) * float(req_body.price)
             )
-            db.flush()
+            from_coin.count = from_coin.count - req_body.count
+            db.commit()
+            return req_body
+        except Exception as e:
+            print(e)
+            return {
+                "status": "unsuccess",
+            }
+
+    def market_sell(self, req_body: Market, payload, db):
+
+        from_coin = req_body.coin_set[: req_body.coin_set.index("/")].upper()
+        to_coin = req_body.coin_set[req_body.coin_set.index("/") + 1 :].upper()
+
+        try:
+            from_coin = self.repository.get_coin(payload["id"], from_coin, db=db)
+            if from_coin == None:
+                return {"status": "not found from coin "}
+
+            to_coin = self.repository.get_coin(payload["id"], to_coin, db=db)
+
+            if to_coin == None:
+                return {"status": "not found to coin "}
+
+            if float(to_coin.count) <= float(req_body.count) * 1 / float(
+                req_body.price
+            ):
+                return {"status": "not enugth coins"}
+
+            to_coin.count = float(
+                float(to_coin.count) - float(req_body.count) * 1 / float(req_body.price)
+            )
+            from_coin.count = from_coin.count + req_body.count
             db.commit()
             return req_body
         except Exception as e:

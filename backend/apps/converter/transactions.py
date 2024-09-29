@@ -8,7 +8,6 @@ from ast import literal_eval
 import sqlalchemy.orm as _orm
 
 from depends import get_redis_service
-from apps.converter.router import convert_immediately
 from apps.converter.service import RedisService
 
 import asyncio
@@ -57,7 +56,7 @@ class Transaction(ABC):
                             # limit_buy(transaction) # todo add buy or cell
                         else:
                             transaction["price_coin"] = current_price
-                            convert_immediately(transaction)
+                            # convert_immediately(transaction)
 
         return {"status": "done"}
 

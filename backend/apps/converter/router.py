@@ -12,7 +12,7 @@ import sqlalchemy.orm as _orm
 from fastapi import APIRouter, Depends, HTTPException
 from depends import get_redis_service, get_convert_service
 from apps.converter.schema import (
-    ConvertImmediately,
+    Market,
     LimitRequest,
     ReqBody,
     SetCoin,
@@ -129,15 +129,32 @@ async def buy_coin(
         raise HTTPException(status_code=500, detail="some problem in code ")
 
 
-@router.post("/convert_Immediately", status_code=200)
-def convert_immediately(
-    req_body: ConvertImmediately,
+@router.post("/market_buy", status_code=200)
+def market_buy_coin(
+    req_body: Market,
     db: _orm.Session = Depends(database.get_db),
     service: ConvertService = Depends(get_convert_service),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
     try:
-        return service.convert_imidiatly(req_body, payload, db=db)
+        return service.market_buy(req_body, payload, db=db)
+
+    except Exception as e:
+        print(e)
+        return {
+            "status": "unsuccess",
+        }
+
+
+@router.post("/market_sell", status_code=200)
+def market_sell_coin(
+    req_body: Market,
+    db: _orm.Session = Depends(database.get_db),
+    service: ConvertService = Depends(get_convert_service),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
+    try:
+        return service.market_sell(req_body, payload, db=db)
 
     except Exception as e:
         print(e)
@@ -151,8 +168,6 @@ async def buy_coin(
     db: _orm.Session = Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
-
-    # _models.CoinAccount
     try:
         res = list(
             db.query(_models.CoinAccount)
@@ -194,19 +209,6 @@ def limit_cell(
 ):
     service.set_value(request.price_coin, request.convert)
     return {"status": "sucess"}
-
-
-@router.post(
-    "/redis",
-    responses={400: {"description": "Bad request"}},
-    description="Redis",
-)
-async def get_redis(
-    service: RedisService = Depends(get_redis_service),
-    payload: dict = fastapi.Depends(jwt_validation),
-):
-    value = service.get_value("my_key")
-    return {"result": value}
 
 
 @coin.get("/coin_set", responses={400: {"description": "Bad request"}})

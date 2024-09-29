@@ -18,9 +18,8 @@ class Book(BaseModel):
     author: Author
 
 
-class ConvertImmediately(BaseModel):
-    from_coin: str
-    to_coin: str
+class Market(BaseModel):
+    coin_set: str
     price: float
     count: float
 
