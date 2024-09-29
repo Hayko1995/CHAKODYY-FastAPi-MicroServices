@@ -8,6 +8,7 @@ from passlib.hash import pbkdf2_sha256
 from apps.notification.email_service import notification
 from apps.support.schemas import Ticket
 from apps.contest.schemas import CreateContest
+from apps.auth.service import get_user_by_id, delete_user_by_id
 import db.database as database
 import apps.auth.schemas as _schemas
 import db.models as _models
@@ -16,8 +17,6 @@ import json
 import pika
 import time
 import os
-
-
 
 
 async def create_contest(contest: CreateContest, db: _orm.Session):
@@ -51,7 +50,31 @@ async def create_contest(contest: CreateContest, db: _orm.Session):
             db.add(_)
             db.commit()
         return True
-    except:
+    except Exception as e:
+        print(e)
+        return False
+
+
+async def delete_contest(payload: dict, id: str, db: _orm.Session):
+
+    user = await get_user_by_id(payload["id"], db)
+
+    if user.is_admin:
+        try:
+            db.query(_models.Contest).filter(_models.Contest.id == id).delete()
+            db.commit()
+            return True
+        except Exception as e:
+            print(e)
+            return False
+    else:
+        return False
+    
+async def get_contest(db: _orm.Session):
+    try:
+        return db.query(_models.Contest).all()
+    except Exception as e:
+        print(e)
         return False
 
 
@@ -80,13 +103,13 @@ async def get_tickets(user_id, ticket: int, db: _orm.Session):
 
     except Exception as e:
         print(e)
-        raise "Server error"
+        return "Server error"
 
 
 async def remove_tickets(user_id, ticket: int, db: _orm.Session):
     try:
         user = await get_user_by_id(user_id, db)
-        if not ticket == -1:
+        if ticket != -1:
             if user.is_admin:
                 db.query(_models.Ticket).filter(_models.Ticket.id == ticket).delete()
                 db.commit()
@@ -97,15 +120,4 @@ async def remove_tickets(user_id, ticket: int, db: _orm.Session):
 
     except Exception as e:
         print(e)
-        raise "Server error"
-
-
-async def get_user_by_id(id: int, db: _orm.Session):
-    return db.query(_models.User).filter(_models.User.id == id).first()
-
-
-async def delete_user_by_id(id: int, db: _orm.Session):
-    # Retrieve a user by email from the database
-
-    db.query(_models.User).filter(_models.User.id == id).delete()
-    db.commit()
+        return "Server  error"

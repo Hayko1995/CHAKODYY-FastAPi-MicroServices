@@ -58,3 +58,8 @@ class ReqBody(BaseModel):
 class LimitRequest(BaseModel):
     coins_pare: str
     convert: dict
+
+
+class SetCoin(BaseModel):
+    id: int = -1
+    coin_set: str

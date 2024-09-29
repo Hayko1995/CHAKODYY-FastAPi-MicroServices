@@ -9,7 +9,7 @@ import sqlalchemy.orm as _orm
 
 from depends import get_redis_service
 from apps.converter.router import convert_immediately
-from apps.converter.convert import RedisService
+from apps.converter.service import RedisService
 
 import asyncio
 import websockets

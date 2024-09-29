@@ -7,15 +7,10 @@ import fastapi.security as _security
 from passlib.hash import pbkdf2_sha256
 from apps.notification.email_service import notification
 from apps.support.schemas import Ticket
+from apps.auth.service import get_user_by_id
 import db.database as database
 import apps.auth.schemas as _schemas
 import db.models as _models
-import random
-import json
-import pika
-import time
-import os
-
 
 
 def verefy_user(user: _models.User, db: _orm.Session):
@@ -44,7 +39,8 @@ async def create_ticket(user_id, ticket: Ticket, db: _orm.Session):
             db.add(_)
             db.commit()
         return True
-    except:
+    except Exception as e:
+        print(e)
         return False
 
 
@@ -73,7 +69,7 @@ async def get_tickets(user_id, ticket: int, db: _orm.Session):
 
     except Exception as e:
         print(e)
-        raise "Server error"
+        return "Server error"
 
 
 async def remove_tickets(user_id, ticket: int, db: _orm.Session):
@@ -93,15 +89,4 @@ async def remove_tickets(user_id, ticket: int, db: _orm.Session):
 
     except Exception as e:
         print(e)
-        raise "Server error"
-
-
-async def get_user_by_id(id: int, db: _orm.Session):
-    return db.query(_models.User).filter(_models.User.id == id).first()
-
-
-async def delete_user_by_id(id: int, db: _orm.Session):
-    # Retrieve a user by email from the database
-
-    db.query(_models.User).filter(_models.User.id == id).delete()
-    db.commit()
+        return "Server error"

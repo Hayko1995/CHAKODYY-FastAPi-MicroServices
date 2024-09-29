@@ -4,6 +4,7 @@ import uuid
 import fastapi
 
 from apps.auth.router import jwt_validation
+from apps.converter import service
 import db.database as database
 import db.models as _models
 import sqlalchemy.orm as _orm
@@ -14,8 +15,9 @@ from apps.converter.schema import (
     ConvertImmediately,
     LimitRequest,
     ReqBody,
+    SetCoin,
 )
-from apps.converter.convert import RedisService, ConvertService
+from apps.converter.service import RedisService, ConvertService
 
 
 router = APIRouter(prefix="/api", tags=["converter"])
@@ -174,7 +176,7 @@ def limit_buy(
     request: LimitRequest,
     service: RedisService = Depends(get_redis_service),
 ):
-    
+
     service.set_value(request.price_coin, request.convert)
     return {"status": "sucess"}
 
@@ -203,3 +205,33 @@ async def get_redis(
 ):
     value = service.get_value("my_key")
     return {"result": value}
+
+
+@router.get("/coin_set", responses={400: {"description": "Bad request"}}, tags=["coin"])
+async def coins_get(
+    db: _orm.Session = Depends(database.get_db),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
+    return await service.get_coins(db)
+
+
+@router.post(
+    "/coin_set", responses={400: {"description": "Bad request"}}, tags=["coin"]
+)
+async def coin_set(
+    request: SetCoin,
+    db: _orm.Session = Depends(database.get_db),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
+    return await service.set_coins(payload["id"], request, db)
+
+
+@router.delete(
+    "/coin_set", responses={400: {"description": "Bad request"}}, tags=["coin"]
+)
+async def coins_delete(
+    request: int,
+    db: _orm.Session = Depends(database.get_db),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
+    return await service.delete_coins(request, db)

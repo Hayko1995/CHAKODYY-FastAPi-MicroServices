@@ -19,9 +19,11 @@ import os
 JWT_SECRET = os.getenv("JWT_SECRET")
 oauth2schema = _security.OAuth2PasswordBearer("/auth/token")
 
+
 def create_database():
     # Create database tables
     return _database.Base.metadata.create_all(bind=_database.engine)
+
 
 async def get_user_by_email(email: str, db: _orm.Session):
     # Retrieve a user by email from the database
@@ -131,8 +133,8 @@ async def get_current_user(
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
         user = db.query(_models.User).get(payload["id"])
-    except:
-
+    except Exception as e:
+        print(e)
         raise _fastapi.HTTPException(
             status_code=401, detail="Invalid Email or Password"
         )
@@ -142,19 +144,6 @@ async def get_current_user(
 def generate_otp():
     # Generate a random OTP
     return str(random.randint(100000, 999999))  # change to time tocken
-
-
-def connect_to_rabbitmq():
-    # Connect to RabbitMQ
-    while True:
-        try:
-            connection = pika.BlockingConnection(
-                pika.ConnectionParameters(RABBITMQ_URL)
-            )
-            return connection
-        except pika.exceptions.AMQPConnectionError:
-            print("Failed to connect to RabbitMQ. Retrying in 5 seconds...")
-            time.sleep(5)
 
 
 def send_otp(email, otp):
@@ -171,3 +160,15 @@ def send_otp(email, otp):
         print("Sent OTP email notification")
     except Exception as err:
         print(f"Failed to publish message: {err}")
+
+
+
+async def get_user_by_id(id: int, db: _orm.Session):
+    return db.query(_models.User).filter(_models.User.id == id).first()
+
+
+async def delete_user_by_id(id: int, db: _orm.Session):
+    # Retrieve a user by email from the database
+
+    db.query(_models.User).filter(_models.User.id == id).delete()
+    db.commit()
