@@ -73,7 +73,7 @@ def test_get_jwt():
     access_token = response.json()["access_token"]
 
 
-title = "test"
+title = "string"
 id = 0
 
 

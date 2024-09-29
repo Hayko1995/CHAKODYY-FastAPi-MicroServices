@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Optional
 import pydantic
 
-        
+
 class CategoryEnum(str, Enum):
     daily = "daily"
     weekly = "weekly"
@@ -26,3 +26,7 @@ class CreateContest(pydantic.BaseModel):
     class Config:
         from_attributes = True
 
+
+class Join(pydantic.BaseModel):
+    contest_id: int
+    participant: int

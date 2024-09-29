@@ -7,7 +7,7 @@ import fastapi.security as _security
 from passlib.hash import pbkdf2_sha256
 from apps.notification.email_service import notification
 from apps.support.schemas import Ticket
-from apps.contest.schemas import CreateContest
+from apps.contest.schemas import CreateContest, Join
 from apps.auth.service import get_user_by_id, delete_user_by_id
 import db.database as database
 import apps.auth.schemas as _schemas
@@ -17,6 +17,7 @@ import json
 import pika
 import time
 import os
+import datetime as _dt
 
 
 async def create_contest(contest: CreateContest, db: _orm.Session):
@@ -69,7 +70,8 @@ async def delete_contest(payload: dict, id: str, db: _orm.Session):
             return False
     else:
         return False
-    
+
+
 async def get_contest(db: _orm.Session):
     try:
         return db.query(_models.Contest).all()
@@ -78,46 +80,41 @@ async def get_contest(db: _orm.Session):
         return False
 
 
-async def get_tickets(user_id, ticket: int, db: _orm.Session):
-    try:
-        user = await get_user_by_id(user_id, db)
-        if ticket == -1:
-            if user.is_admin:
-                return db.query(_models.Ticket).all()
-            return (
-                db.query(_models.Ticket)
-                .filter(_models.Ticket.user_id == str(user_id))
-                .all()
-            )
+def get_contest_by_id(id: int, db: _orm.Session):
+    return db.query(_models.Contest).filter(_models.Contest.id == id).first()
 
-        else:
-            print(ticket)
-            res = (
-                db.query(_models.Ticket)
-                .filter(
-                    _models.Ticket.user_id == str(user_id), _models.Ticket.id == ticket
+
+async def join(id: int, join: Join, db: _orm.Session):
+    if get_contest_by_id(join.contest_id, db) != None:
+        if await get_user_by_id(id, db) != None:
+            try:
+                contest_participant = _models.ContestParticipant(
+                    contest_id=join.contest_id,
+                    participant=id,
+                    is_withdrawn=False,
                 )
-                .first()
-            )
-            return [res]
-
-    except Exception as e:
-        print(e)
-        return "Server error"
-
-
-async def remove_tickets(user_id, ticket: int, db: _orm.Session):
-    try:
-        user = await get_user_by_id(user_id, db)
-        if ticket != -1:
-            if user.is_admin:
-                db.query(_models.Ticket).filter(_models.Ticket.id == ticket).delete()
+                db.add(contest_participant)
                 db.commit()
-            return {"status": "sucsess"}
-
+                return True
+            except Exception as e:
+                print(e)
         else:
-            return {"status": "unsucsess"}
+            return {"result": "no user"}
+    else:
+        return {"result": "no contest"}
 
+
+async def exit(id: int, db: _orm.Session):
+    try:
+        contest_participant = (
+            db.query(_models.ContestParticipant)
+            .filter(_models.ContestParticipant.id == id)
+            .first()
+        )
+        contest_participant.withdraw_time = _dt.datetime.now()
+        db.add(contest_participant)
+        db.commit()
+        return True
     except Exception as e:
         print(e)
-        return "Server  error"
+        return False

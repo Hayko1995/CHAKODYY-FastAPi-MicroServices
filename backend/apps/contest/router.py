@@ -6,6 +6,7 @@ import pika
 
 import fastapi
 from fastapi import BackgroundTasks
+from sqlalchemy import Join
 import uvicorn
 import sqlalchemy.orm as orm
 
@@ -78,19 +79,19 @@ async def delete_contest(
 
 @contest.post("/join")
 async def get_contest(
-    ticket: int = -1,
+    join: schemas.Join,
     db: orm.Session = fastapi.Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
 
-    return await services.get_tickets(user_id=payload["id"], ticket=ticket, db=db)
+    return await services.join(id=payload["id"], join=join, db=db)
 
 
 @contest.post("/exit")
 async def exit_contest(
-    ticket: int = -1,
+    id: int = -1,
     db: orm.Session = fastapi.Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
 
-    return await services.remove_tickets(user_id=payload["id"], ticket=ticket, db=db)
+    return await services.exit(id=id, db=db)
