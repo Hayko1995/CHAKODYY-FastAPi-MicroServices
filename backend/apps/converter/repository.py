@@ -12,13 +12,13 @@ class ConvertRepository:
     def buy_coin(self) -> dict:
         raise NotImplemented
 
-    def get_coin(self, id, coin, db) -> models.CoinAccount:
+    def get_coin(self, id, coin, db) -> models.Balance:
         try:
             coin = (
-                db.query(models.CoinAccount)
+                db.query(models.Balance)
                 .filter(
-                    models.CoinAccount.user_id == id,
-                    models.CoinAccount.name == coin,
+                    models.Balance.user_id == id,
+                    models.Balance.name == coin,
                 )
                 .first()
             )

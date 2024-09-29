@@ -1,6 +1,6 @@
 import redis
 from apps.converter.repository import ConvertRepository, RedisRepository
-from apps.converter.service import RedisService, ConvertService
+from apps.converter.service import ConvertService
 from dependency_injector import containers, providers
 import asyncio_redis
 
@@ -21,12 +21,7 @@ def connect_to_redis():
     return connection
 
 
-redis_service = RedisService(redis_repository, connect_to_redis())
 convert_service = ConvertService(convert_repository)
-
-
-def get_redis_service() -> RedisService:
-    return redis_service
 
 
 def get_convert_service() -> ConvertService:

@@ -22,6 +22,7 @@ client = TestClient(app)
 
 
 global access_token
+global contest_id
 
 
 def test_chack_api():
@@ -131,25 +132,116 @@ def test_buy_history():
     }
 
 
-def test_convert_coin_immidiatly():
+def test_create_contest():
     headers = {
         "accept": "application/json",
         "Content-Type": "application/json",
         "Authorization": "Bearer " + access_token,
     }
 
-    json_str = {"from_coin": "usdt", "to_coin": "btc", "price": 100, "count": 1}
+    json_str = {
+        "id": -1,
+        "title": "string",
+        "category": "weekly",
+        "start_time": "2024-09-29",
+        "end_time": "2024-09-29",
+        "reward": "string",
+        "contest_coins": "string",
+        "trading_balance": "string",
+    }
 
     response = client.post(
-        "/api/convert_Immediately", headers=headers, data=json.dumps(json_str)
+        "/contest/contest", headers=headers, data=json.dumps(json_str)
     )
     assert response.status_code == 200
-    assert response.json() == {
-        "from_coin": "USDT",
-        "to_coin": "BTC",
-        "price": 100.0,
-        "count": 1.0,
+    global contest_id
+    contest_id = response.json()
+
+
+def test_join_contest():
+    headers = {
+        "accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + access_token,
     }
+    global contest_id
+
+    response = client.post("/contest/join", headers=headers, params=contest_id)
+    assert response.status_code == 200
+    global join_id
+    join_id = response.json()["id"]
+
+
+def test_market_buy():
+    headers = {
+        "accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + access_token,
+    }
+
+    json_str = {"coin_set": "usdt/btc", "price": 1, "count": 1}
+
+    response = client.post(
+        "/api/market_buy", headers=headers, data=json.dumps(json_str)
+    )
+    assert response.status_code == 200
+    assert response.json() == {"coin_set": "USDT/BTC", "price": 1, "count": 1}
+
+
+def test_market_cell():
+    headers = {
+        "accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + access_token,
+    }
+
+    json_str = {"coin_set": "usdt/btc", "price": 1, "count": 1}
+
+    response = client.post(
+        "/api/market_sell", headers=headers, data=json.dumps(json_str)
+    )
+    assert response.status_code == 200
+    assert response.json() == {"coin_set": "USDT/BTC", "price": 1, "count": 1}
+
+
+# delete
+def test_delete_participant():
+    headers = {
+        "accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + access_token,
+    }
+
+    response = client.delete(
+        "/contest/delete_contest_participant", headers=headers, params={"id": join_id}
+    )
+
+    assert response.status_code == 200
+    
+def test_delete_participant():
+    headers = {
+        "accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + access_token,
+    }
+
+    response = client.delete(
+        "/contest/delete_contest_participant", headers=headers, params={"id": join_id}
+    )
+
+    assert response.status_code == 200
+
+
+def test_participant():
+    headers = {
+        "accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + access_token,
+    }
+
+    response = client.delete("/contest/contest/", headers=headers, params=contest_id)
+
+    assert response.status_code == 200
 
 
 def test_user_delete():

@@ -19,7 +19,10 @@ async def create_contest(contest: CreateContest, db: _orm.Session):
                 trading_balance=contest.trading_balance,
             )
             db.add(contest)
+            db.flush()
             db.commit()
+            db.refresh(contest, attribute_names=["id"])
+            return contest
         else:
             _ = (
                 db.query(_models.Contest)
@@ -35,8 +38,10 @@ async def create_contest(contest: CreateContest, db: _orm.Session):
             _.trading_balance = (contest.trading_balance,)
 
             db.add(_)
+            db.flush()
             db.commit()
-        return True
+            db.refresh(_, attribute_names=["id"])
+        return _.id
     except Exception as e:
         print(e)
         return False
@@ -84,8 +89,10 @@ async def join(user_id: int, id: int, db: _orm.Session):
                         is_withdrawn=False,
                     )
                     db.add(contest_participant)
+                    db.flush()
                     db.commit()
-                    return True
+                    db.refresh(contest_participant)
+                    return contest_participant
                 except Exception as e:
                     print(e)
             else:
@@ -120,6 +127,19 @@ async def exit(id: int, db: _orm.Session):
             return True
         else:
             return {"status": "you cant exit "}
+
+    except Exception as e:
+        print(e)
+        return {"status": "Server Error"}
+
+
+async def delete_participant(id: int, db: _orm.Session):
+    try:
+        (
+            db.query(_models.ContestParticipant)
+            .filter(_models.ContestParticipant.id == id)
+            .delete()
+        )
 
     except Exception as e:
         print(e)

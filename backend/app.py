@@ -6,7 +6,7 @@ from fastapi import FastAPI, BackgroundTasks, security
 from abc import ABC
 from db import models as _models
 
-from apps.converter.transactions import Transaction, WebSocketClient
+from apps.converter.transactions import Transaction
 from apps.converter.router import router as converter
 from apps.converter.router import coin
 from apps.auth.router import auth
@@ -31,10 +31,7 @@ _models.Base.metadata.create_all(_models.engine)
 @app.on_event("startup")
 def start_websocket():
     # Run the WebSocket in a separate thread
-    if os.environ.get("DEBUG") == "TRUE":
-        threading.Thread(target=WebSocketClient().start, daemon=True).start()
-    else:
-        threading.Thread(target=Transaction().run, daemon=True).start()
+    threading.Thread(target=Transaction().run, daemon=True).start()
 
 
 # # Start the FastAPI server

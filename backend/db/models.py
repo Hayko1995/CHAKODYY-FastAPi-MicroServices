@@ -58,8 +58,8 @@ class Status(enum.Enum):
     PUBLISHED = "published"
 
 
-class CoinAccount(database.Base):
-    __tablename__ = "coin"
+class Balance(database.Base):
+    __tablename__ = "balance"
 
     uuid = _sql.Column(
         UUID(as_uuid=True), default=uuid.uuid4, primary_key=True, index=True

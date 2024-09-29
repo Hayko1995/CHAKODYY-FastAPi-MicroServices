@@ -10,14 +10,14 @@ import db.models as _models
 import sqlalchemy.orm as _orm
 
 from fastapi import APIRouter, Depends, HTTPException
-from depends import get_redis_service, get_convert_service
+from depends import get_convert_service
 from apps.converter.schema import (
     Market,
     LimitRequest,
     ReqBody,
     SetCoin,
 )
-from apps.converter.service import RedisService, ConvertService
+from apps.converter.service import ConvertService
 
 
 router = APIRouter(prefix="/api", tags=["converter"])
@@ -70,8 +70,8 @@ async def delete_buys(
 ):
     try:
 
-        db.query(_models.CoinAccount).filter(
-            _models.CoinAccount.user_id == payload["id"]
+        db.query(_models.Balance).filter(
+            _models.Balance.user_id == payload["id"]
         ).delete()
         db.commit()
 
@@ -89,17 +89,17 @@ async def buy_coin(
     req_body.coin_name = req_body.coin_name.upper()
     try:
         row = (
-            db.query(_models.CoinAccount)
+            db.query(_models.Balance)
             .filter(
-                _models.CoinAccount.user_id == payload["id"],
-                _models.CoinAccount.name == req_body.coin_name,
+                _models.Balance.user_id == payload["id"],
+                _models.Balance.name == req_body.coin_name,
             )
             .first()
         )
         if row is None:
             # Add coin in the db.
             coin_uuid = uuid.uuid4()
-            data = _models.CoinAccount(
+            data = _models.Balance(
                 uuid=coin_uuid,
                 name=req_body.coin_name,
                 count=req_body.coin_count,
@@ -170,8 +170,8 @@ async def buy_coin(
 ):
     try:
         res = list(
-            db.query(_models.CoinAccount)
-            .filter(_models.CoinAccount.user_id == payload["id"])
+            db.query(_models.Balance)
+            .filter(_models.Balance.user_id == payload["id"])
             .all(),
         )
         coins = []
@@ -191,7 +191,6 @@ async def buy_coin(
 )
 def limit_buy(
     request: LimitRequest,
-    service: RedisService = Depends(get_redis_service),
 ):
 
     service.set_value(request.price_coin, request.convert)
@@ -204,7 +203,6 @@ def limit_buy(
 )
 def limit_cell(
     request: LimitRequest,
-    service: RedisService = Depends(get_redis_service),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
     service.set_value(request.price_coin, request.convert)

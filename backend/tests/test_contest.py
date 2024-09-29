@@ -100,7 +100,6 @@ def test_create_contest():
     )
 
     assert response.status_code == 200
-    assert response.json() == {"status_code": 201, "detail": "Created", "headers": None}
 
 
 def test_get_contest():

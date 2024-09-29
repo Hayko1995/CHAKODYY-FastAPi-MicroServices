@@ -30,17 +30,7 @@ async def create_contest(
     db: orm.Session = fastapi.Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
-    status = await services.create_contest(contest=contest, db=db)
-    if status:
-        return fastapi.HTTPException(
-            status_code=201,
-            detail="Created",
-        )
-    else:
-        return fastapi.HTTPException(
-            status_code=500,
-            detail="Server  side error",
-        )
+    return await services.create_contest(contest=contest, db=db)
 
 
 @contest.get("/contest")
@@ -84,7 +74,7 @@ async def get_contest(
     payload: dict = fastapi.Depends(jwt_validation),
 ):
 
-    return await services.join(user_id = payload["id"], id=id, db=db)
+    return await services.join(user_id=payload["id"], id=id, db=db)
 
 
 @contest.post("/exit")
@@ -95,3 +85,13 @@ async def exit_contest(
 ):
 
     return await services.exit(id=id, db=db)
+
+
+@contest.delete("/delete_contest_participant")
+async def get_contest(
+    id: int,
+    db: orm.Session = fastapi.Depends(database.get_db),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
+
+    return await services.delete_participant(id=id, db=db)
