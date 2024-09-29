@@ -18,7 +18,7 @@ class ConvertService:
     def __init__(self, repository: ConvertRepository) -> None:
         self.repository = repository
 
-    def market_buy(self, req_body: Market, payload, db):
+    def market_buy(self, req_body: Market, payload, db: _orm.Session):
 
         from_coin = req_body.coin_set[: req_body.coin_set.index("/")].upper()
         to_coin = req_body.coin_set[req_body.coin_set.index("/") + 1 :].upper()
@@ -40,6 +40,23 @@ class ConvertService:
                 float(to_coin.count) + float(req_body.count) * float(req_body.price)
             )
             from_coin.count = from_coin.count - req_body.count
+            contest_id = (
+                db.query(models.ContestParticipant)
+                .filter(models.ContestParticipant.participant == payload["id"])
+                .first()
+                .contest_id
+            )
+
+            order = models.Order(
+                order_type="market",
+                order_direction="buy",
+                order_coin=req_body.coin_set,
+                order_quantity=req_body.count,
+                order_status=True,
+                user_id=payload["id"],
+                contest_id=contest_id,
+            )
+            db.add(order)
             db.commit()
             return req_body
         except Exception as e:
@@ -72,6 +89,24 @@ class ConvertService:
                 float(to_coin.count) - float(req_body.count) * 1 / float(req_body.price)
             )
             from_coin.count = from_coin.count + req_body.count
+            
+            contest_id = (
+                db.query(models.ContestParticipant)
+                .filter(models.ContestParticipant.participant == payload["id"])
+                .first()
+                .contest_id
+            )
+
+            order = models.Order(
+                order_type="market",
+                order_direction="sell",
+                order_coin=req_body.coin_set,
+                order_quantity=req_body.count,
+                order_status=True,
+                user_id=payload["id"],
+                contest_id=contest_id,
+            )
+            db.add(order)
             db.commit()
             return req_body
         except Exception as e:

@@ -59,7 +59,7 @@ class Status(enum.Enum):
 
 
 class CoinAccount(database.Base):
-    __tablename__ = "coin_account"
+    __tablename__ = "coin"
 
     uuid = _sql.Column(
         UUID(as_uuid=True), default=uuid.uuid4, primary_key=True, index=True
@@ -121,7 +121,7 @@ class ContestParticipant(database.Base):
 
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
     contest_id = _sql.Column(_sql.Integer)
-    participant = _sql.Column(_sql.String)
+    participant = _sql.Column(_sql.Integer)
 
     is_withdrawn = _sql.Column(_sql.Boolean, default=False)
     joining_time = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
@@ -145,8 +145,8 @@ class Status(enum.Enum):
     PUBLISHED = "published"
 
 
-class Orders(database.Base):
-    __tablename__ = "orders"
+class Order(database.Base):
+    __tablename__ = "order"
 
     order_id = _sql.Column(
         UUID(as_uuid=True), default=uuid.uuid4, primary_key=True, index=True
