@@ -8,6 +8,7 @@ from db import models as _models
 
 from apps.converter.transactions import Transaction, WebSocketClient
 from apps.converter.router import router as converter
+from apps.converter.router import coin
 from apps.auth.router import auth
 from apps.support.router import support
 from apps.contest.router import contest
@@ -21,6 +22,7 @@ app = FastAPI(openapi_url="/core/openapi.json", docs_url="/docs")
 app.include_router(converter)
 app.include_router(auth)
 app.include_router(support)
+app.include_router(coin)
 app.include_router(contest)
 logging.basicConfig(level=logging.INFO)
 _models.Base.metadata.create_all(_models.engine)
@@ -29,7 +31,7 @@ _models.Base.metadata.create_all(_models.engine)
 @app.on_event("startup")
 def start_websocket():
     # Run the WebSocket in a separate thread
-    if os.environ.get("DEBUG") == 'TRUE':
+    if os.environ.get("DEBUG") == "TRUE":
         threading.Thread(target=WebSocketClient().start, daemon=True).start()
     else:
         threading.Thread(target=Transaction().run, daemon=True).start()

@@ -21,6 +21,7 @@ from apps.converter.service import RedisService, ConvertService
 
 
 router = APIRouter(prefix="/api", tags=["converter"])
+coin = APIRouter(prefix="/api", tags=["coinSet"])
 
 
 @router.post("/get_buy_history", status_code=200)
@@ -162,7 +163,8 @@ async def buy_coin(
         for coin in res:
             coins.append({coin.name: coin.count})
 
-    except:
+    except Exception as e:
+        print(e)
         raise HTTPException(status_code=response.status_code, detail=response.json())
 
     return {"status": "success", "coins": coins}
@@ -207,7 +209,7 @@ async def get_redis(
     return {"result": value}
 
 
-@router.get("/coin_set", responses={400: {"description": "Bad request"}}, tags=["coin"])
+@coin.get("/coin_set", responses={400: {"description": "Bad request"}})
 async def coins_get(
     db: _orm.Session = Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
@@ -215,9 +217,7 @@ async def coins_get(
     return await service.get_coins(db)
 
 
-@router.post(
-    "/coin_set", responses={400: {"description": "Bad request"}}, tags=["coin"]
-)
+@coin.post("/coin_set", responses={400: {"description": "Bad request"}})
 async def coin_set(
     request: SetCoin,
     db: _orm.Session = Depends(database.get_db),
@@ -226,9 +226,7 @@ async def coin_set(
     return await service.set_coins(payload["id"], request, db)
 
 
-@router.delete(
-    "/coin_set", responses={400: {"description": "Bad request"}}, tags=["coin"]
-)
+@coin.delete("/coin_set", responses={400: {"description": "Bad request"}})
 async def coins_delete(
     request: int,
     db: _orm.Session = Depends(database.get_db),

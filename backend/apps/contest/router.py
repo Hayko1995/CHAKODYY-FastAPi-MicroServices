@@ -38,7 +38,7 @@ async def create_contest(
     else:
         return fastapi.HTTPException(
             status_code=500,
-            detail="Server side error",
+            detail="Server  side error",
         )
 
 
