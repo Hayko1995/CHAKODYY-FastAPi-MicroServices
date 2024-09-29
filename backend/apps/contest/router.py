@@ -79,12 +79,12 @@ async def delete_contest(
 
 @contest.post("/join")
 async def get_contest(
-    join: schemas.Join,
+    id: int,
     db: orm.Session = fastapi.Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
 
-    return await services.join(id=payload["id"], join=join, db=db)
+    return await services.join(user_id = payload["id"], id=id, db=db)
 
 
 @contest.post("/exit")

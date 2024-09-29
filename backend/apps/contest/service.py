@@ -1,22 +1,8 @@
-import jwt
 import sqlalchemy.orm as _orm
-import passlib.hash as _hash
-import email_validator as _email_check
-import fastapi as _fastapi
-import fastapi.security as _security
-from passlib.hash import pbkdf2_sha256
 from apps.notification.email_service import notification
-from apps.support.schemas import Ticket
-from apps.contest.schemas import CreateContest, Join
-from apps.auth.service import get_user_by_id, delete_user_by_id
-import db.database as database
-import apps.auth.schemas as _schemas
+from apps.contest.schemas import CreateContest
+from apps.auth.service import get_user_by_id
 import db.models as _models
-import random
-import json
-import pika
-import time
-import os
 import datetime as _dt
 
 
@@ -84,22 +70,28 @@ def get_contest_by_id(id: int, db: _orm.Session):
     return db.query(_models.Contest).filter(_models.Contest.id == id).first()
 
 
-async def join(id: int, join: Join, db: _orm.Session):
-    if get_contest_by_id(join.contest_id, db) != None:
-        if await get_user_by_id(id, db) != None:
-            try:
-                contest_participant = _models.ContestParticipant(
-                    contest_id=join.contest_id,
-                    participant=id,
-                    is_withdrawn=False,
-                )
-                db.add(contest_participant)
-                db.commit()
-                return True
-            except Exception as e:
-                print(e)
+async def join(user_id: int, id: int, db: _orm.Session):
+    contest = get_contest_by_id(id, db)
+    if get_contest_by_id(id, db) != None:
+
+        if _dt.datetime.now() > contest.start_time:
+
+            if await get_user_by_id(user_id, db) != None:
+                try:
+                    contest_participant = _models.ContestParticipant(
+                        contest_id=id,
+                        participant=user_id,
+                        is_withdrawn=False,
+                    )
+                    db.add(contest_participant)
+                    db.commit()
+                    return True
+                except Exception as e:
+                    print(e)
+            else:
+                return {"result": "no user"}
         else:
-            return {"result": "no user"}
+            return {"result": "not started"}
     else:
         return {"result": "no contest"}
 
@@ -111,10 +103,24 @@ async def exit(id: int, db: _orm.Session):
             .filter(_models.ContestParticipant.id == id)
             .first()
         )
-        contest_participant.withdraw_time = _dt.datetime.now()
-        db.add(contest_participant)
-        db.commit()
-        return True
+        contest = (
+            db.query(_models.Contest)
+            .filter(_models.Contest.id == contest_participant.contest_id)
+            .first()
+        )
+
+        if (
+            _dt.datetime.now() < contest.start_time
+            and _dt.datetime.now() > contest.end_time
+        ):
+            contest_participant.is_withdrawn = True
+            contest_participant.withdraw_time = _dt.datetime.now()
+            db.add(contest_participant)
+            db.commit()
+            return True
+        else:
+            return {"status": "you cant exit "}
+
     except Exception as e:
         print(e)
-        return False
+        return {"status": "Server Error"}

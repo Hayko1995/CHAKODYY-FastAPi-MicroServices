@@ -26,7 +26,3 @@ class CreateContest(pydantic.BaseModel):
     class Config:
         from_attributes = True
 
-
-class Join(pydantic.BaseModel):
-    contest_id: int
-    participant: int

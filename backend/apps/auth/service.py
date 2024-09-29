@@ -164,6 +164,7 @@ def send_otp(email, otp):
 
 
 async def get_user_by_id(id: int, db: _orm.Session):
+    
     return db.query(_models.User).filter(_models.User.id == id).first()
 
 
