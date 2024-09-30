@@ -116,17 +116,14 @@ async def exit(id: int, db: _orm.Session):
             .first()
         )
 
-        if (
-            _dt.datetime.now() < contest.start_time
-            and _dt.datetime.now() > contest.end_time
-        ):
+        if _dt.datetime.now() < contest.start_time:
             contest_participant.is_withdrawn = True
             contest_participant.withdraw_time = _dt.datetime.now()
             db.add(contest_participant)
             db.commit()
             return True
         else:
-            return {"status": "you cant exit "}
+            return {"status": "you can't exit "}
 
     except Exception as e:
         print(e)

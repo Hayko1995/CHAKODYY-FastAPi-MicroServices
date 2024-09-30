@@ -64,7 +64,7 @@ class Balance(database.Base):
     uuid = _sql.Column(
         UUID(as_uuid=True), default=uuid.uuid4, primary_key=True, index=True
     )
-    name = _sql.Column(_sql.String, nullable=False)
+    name = _sql.Column(_sql.String, nullable=False, unique=True)
     count = _sql.Column(_sql.Float, nullable=False)
     user_id = _sql.Column(_sql.Integer, nullable=False)
 
@@ -103,7 +103,7 @@ class Contest(database.Base):
     __tablename__ = "contest"
 
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
-    title = _sql.Column(_sql.String, unique=False)
+    title = _sql.Column(_sql.String, unique=True)
     category = _sql.Column(_sql.String, unique=False)
     start_time = _sql.Column(_sql.DateTime)
     end_time = _sql.Column(_sql.DateTime)
@@ -132,7 +132,7 @@ class CoinSet(database.Base):
     __tablename__ = "coin_set"
 
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
-    coins = _sql.Column(_sql.String, unique=False)
+    coins = _sql.Column(_sql.String, unique=True)
     created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
     updated_at = _sql.Column(
         _sql.TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
