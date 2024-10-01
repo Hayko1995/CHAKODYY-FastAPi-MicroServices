@@ -2,6 +2,8 @@ from abc import ABC
 import json
 from fastapi import Depends
 import websocket
+from apps.converter.router import market_buy_coin, market_sell_coin
+from apps.converter.schema import Market
 import db.models as _models
 import db.database as database
 from ast import literal_eval
@@ -11,7 +13,6 @@ import asyncio
 import websockets
 import json
 
-import sqlalchemy as db
 import websocket
 
 from dotenv import load_dotenv
@@ -22,10 +23,6 @@ load_dotenv()
 
 
 class Transaction(ABC):
-
-    def __init__(self) -> None:
-        self.engine = db.create_engine(database.DATABASE_URL)
-        self.connection = self.engine.connect()
 
     def on_message(self, ws, message):
         global current_price
@@ -56,6 +53,47 @@ class Transaction(ABC):
 
         return {"status": "done"}
 
+    def get_rows_from_db(self, row_coin_set: str):
+        db = database.SessionLocal()
+        coin_sets = (
+            db.query(_models.OrderPending)
+            .filter(_models.OrderPending.order_coin == row_coin_set)
+            .all()
+        )
+        return coin_sets
+
+    def delete_row(self, order_id: str):
+        db = database.SessionLocal()
+        coin_sets = (
+            db.query(_models.OrderPending)
+            .filter(_models.OrderPending.order_id == order_id)
+            .delete()
+        )
+        db.commit()
+        return coin_sets
+
+    def process(self, coin, ticker):
+        rows = self.get_rows_from_db(coin)
+        for row in rows:
+            if row.order_direction == "buy":
+                if float(row.price) < ticker["c"]:
+                    self.delete_row(order_id=row.order_id)
+                    market = Market(
+                        coin_set=row.order_coin,
+                        price=row.price,
+                        count=row.order_quantity,
+                    )
+                    market_buy_coin(market)
+            else:
+                if float(row.price) > ticker["c"]:
+                    self.delete_row(order_id=row.order_id)
+                    market = Market(
+                        coin_set=row.order_coin,
+                        price=row.price,
+                        count=row.order_quantity,
+                    )
+                    market_sell_coin(market)
+
     async def binance_ws(self):
         url = "wss://stream.binance.com:9443/ws/!ticker@arr"
 
@@ -63,38 +101,27 @@ class Transaction(ABC):
             while True:
                 data = await ws.recv()
                 data_json = json.loads(data)
-
                 for ticker in data_json:
                     if ticker["s"] == "BTCUSDT":
-                        pass
-                        # print(f"BTC/USDT Price: {ticker['c']}")
+                        self.process("BTC/USDT", ticker)
                     elif ticker["s"] == "ETHUSDT":
-                        pass
-                        # print(f"ETH/USDT Price: {ticker['c']}")
+                        self.process("ETH/USDT", ticker)
                     elif ticker["s"] == "SOLUSDT":
-                        pass
-                        # print(f"SOL/USDT Price: {ticker['c']}")
+                        self.process("SOL/USDT", ticker)
                     elif ticker["s"] == "NEARUSDT":
-                        # print(f"NEAR/USDT Price: {ticker['c']}")
-                        pass
+                        self.process("NEAR/USDT", ticker)
                     elif ticker["s"] == "MATICUSDT":
-                        # print(f"MATI/CUSDT Price: {ticker['c']}")
-                        pass
+                        self.process("MATIC/USDT", ticker)
                     elif ticker["s"] == "TRXUSDT":
-                        # print(f"TRX/USDT Price: {ticker['c']}")
-                        pass
+                        self.process("TRX/USDT", ticker)
                     elif ticker["s"] == "PEOPLEUSDT":
-                        # print(f"PEOPLE/USDT Price: {ticker['c']}")
-                        pass
+                        self.process("PEOPLE/USDT", ticker)
                     elif ticker["s"] == "IOUSDT":
-                        # print(f"IO/USDT Price: {ticker['c']}")
-                        pass
+                        self.process("IOU/USDT", ticker)
                     elif ticker["s"] == "DOGEUSDT":
-                        # print(f"DOGE/USDT Price: {ticker['c']}")
-                        pass
+                        self.process("DOGE/USDT", ticker)
                     elif ticker["s"] == "BNBUSDT":
-                        # print(f"BNB/USDT Price: {ticker['c']}")
-                        pass
+                        self.process("BNB/USDT", ticker)
 
     def run(self):
         loop = asyncio.new_event_loop()

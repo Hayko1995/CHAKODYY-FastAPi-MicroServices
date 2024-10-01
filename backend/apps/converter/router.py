@@ -185,28 +185,38 @@ async def buy_coin(
     return {"status": "success", "coins": coins}
 
 
-@router.post(
-    "/limit_buy",
-    responses={400: {"description": "Bad request"}},
-)
-def limit_buy(
-    request: LimitRequest,
-):
-
-    service.set_value(request.price_coin, request.convert)
-    return {"status": "sucess"}
-
-
-@router.post(
-    "/limit_cell",
-    responses={400: {"description": "Bad request"}},
-)
-def limit_cell(
-    request: LimitRequest,
+@router.post("/limit_sell", status_code=200)
+def market_sell_coin(
+    req_body: Market,
+    db: _orm.Session = Depends(database.get_db),
+    service: ConvertService = Depends(get_convert_service),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
-    service.set_value(request.price_coin, request.convert)
-    return {"status": "sucess"}
+    try:
+        return service.limit_sell(req_body, payload, db=db)
+
+    except Exception as e:
+        print(e)
+        return {
+            "status": "unsuccess",
+        }
+
+
+@router.post("/limit_buy", status_code=200)
+def market_sell_coin(
+    req_body: Market,
+    db: _orm.Session = Depends(database.get_db),
+    service: ConvertService = Depends(get_convert_service),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
+    try:
+        return service.limit_buy(req_body, payload, db=db)
+
+    except Exception as e:
+        print(e)
+        return {
+            "status": "unsuccess",
+        }
 
 
 @coin.get("/coin_set", responses={400: {"description": "Bad request"}})
@@ -233,3 +243,11 @@ async def coins_delete(
     payload: dict = fastapi.Depends(jwt_validation),
 ):
     return await service.delete_coins(request, db)
+
+
+@coin.get("/balance", responses={400: {"description": "Bad request"}})
+async def get_balance(
+    db: _orm.Session = Depends(database.get_db),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
+    return await service.get_balance(payload["id"], db)

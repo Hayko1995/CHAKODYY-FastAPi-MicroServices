@@ -145,8 +145,8 @@ class Status(enum.Enum):
     PUBLISHED = "published"
 
 
-class Order(database.Base):
-    __tablename__ = "order"
+class OrderArchived(database.Base):
+    __tablename__ = "order_archived"
 
     order_id = _sql.Column(
         UUID(as_uuid=True), default=uuid.uuid4, primary_key=True, index=True
@@ -156,6 +156,30 @@ class Order(database.Base):
     order_coin = _sql.Column(_sql.String, nullable=False)
     order_quantity = _sql.Column(_sql.Float, nullable=False)
     order_status = _sql.Column(_sql.Boolean, nullable=False)
+    created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
+    price = _sql.Column(_sql.Float, nullable=False, default=0)
+    updated_at = _sql.Column(
+        _sql.TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
+    )
+    user_id = _sql.Column(_sql.Integer, nullable=False)
+    contest_id = _sql.Column(_sql.Integer, nullable=False)
+
+    class Config:
+        orm_mode = True
+
+
+class OrderPending(database.Base):
+    __tablename__ = "order_pending"
+
+    order_id = _sql.Column(
+        UUID(as_uuid=True), default=uuid.uuid4, primary_key=True, index=True
+    )
+    order_type = _sql.Column(_sql.String, nullable=False)
+    order_direction = _sql.Column(_sql.String, nullable=False)
+    order_coin = _sql.Column(_sql.String, nullable=False)
+    order_quantity = _sql.Column(_sql.Float, nullable=False)
+    order_status = _sql.Column(_sql.Boolean, nullable=False)
+    price = _sql.Column(_sql.Float, nullable=False, default=0)
     created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
     updated_at = _sql.Column(
         _sql.TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
