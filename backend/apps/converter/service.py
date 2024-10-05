@@ -24,11 +24,12 @@ class ConvertService:
         to_coin = req_body.coin_set[req_body.coin_set.index("/") + 1 :].upper()
 
         try:
-            if (
+            coin = (
                 db.query(models.CoinSet)
                 .filter(models.CoinSet.coins == req_body.coin_set)
                 .first()
-            ):
+            )
+            if coin:
                 from_coin = self.repository.get_coin(payload["id"], from_coin, db=db)
                 if from_coin == None:
                     return {"status": " not found from coin "}
@@ -256,6 +257,15 @@ async def set_coins(id: str, coins_set: SetCoin, db: _orm.Session):
     if user.is_admin:
 
         try:
+
+            coin = (
+                db.query(models.CoinSet)
+                .filter(models.CoinSet.coins == coins_set.coin_set)
+                .first()
+            )
+            if coin != None:
+                return {"status": "coin Exist"}
+
             if coins_set.id == -1:
                 coin_set = models.CoinSet(coins=coins_set.coin_set)
                 db.add(coin_set)
@@ -293,3 +303,36 @@ async def get_balance(id, db: _orm.Session):
     except Exception as e:
         print(e)
         return False
+
+
+
+
+
+class RedisService:
+    def __init__(self, repository: RedisRepository, connection) -> None:
+        self.repository = repository
+        self.connection = connection
+
+    def get_value(self, key) -> List[dict]:
+        connection = self.connection
+        return connection.get(key)
+
+    def get_keys(self) -> List[dict]:
+        connection = self.connection
+        connection.keys()
+        return connection.keys()
+
+    def set_value(self, key, value) -> None:
+        connection = self.connection
+        redis_value = connection.get(key)
+        if redis_value == None:
+            return connection.set(str(key), json.dumps([value]))
+        redis_value = json.loads(redis_value)
+
+        redis_value.append(value)
+
+        return connection.set(str(key), json.dumps(redis_value))
+
+    def delete_value(self, key) -> None:
+        connection = self.connection
+        return connection.delete(str(key))

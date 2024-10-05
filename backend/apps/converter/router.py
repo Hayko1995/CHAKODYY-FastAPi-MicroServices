@@ -10,14 +10,14 @@ import db.models as _models
 import sqlalchemy.orm as _orm
 
 from fastapi import APIRouter, Depends, HTTPException
-from depends import get_convert_service
+from depends import get_convert_service, get_redis_service
 from apps.converter.schema import (
     Market,
     LimitRequest,
     ReqBody,
     SetCoin,
 )
-from apps.converter.service import ConvertService
+from apps.converter.service import ConvertService, RedisService
 
 
 router = APIRouter(prefix="/api", tags=["converter"])
@@ -251,3 +251,27 @@ async def get_balance(
     payload: dict = fastapi.Depends(jwt_validation),
 ):
     return await service.get_balance(payload["id"], db)
+
+
+@router.post(
+    "/limit_buy",
+    responses={400: {"description": "Bad request"}},
+)
+def limit_buy(
+    request: Market,
+    service: RedisService = Depends(get_redis_service),
+):
+    service.set_value(request.price_coin, request.convert)
+    return {"status": "sucess"}
+
+
+@router.post(
+    "/limit_sell",
+    responses={400: {"description": "Bad request"}},
+)
+def limit_sell(
+    request: Market,
+    service: RedisService = Depends(get_redis_service),
+):
+    service.set_value(request.price_coin, request.convert)
+    return {"status": "sucess"}

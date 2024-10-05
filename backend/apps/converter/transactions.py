@@ -73,32 +73,34 @@ class Transaction(ABC):
         return coin_sets
 
     def process(self, coin, ticker):
-        rows = self.get_rows_from_db(coin)
-        for row in rows:
-            if row.order_direction == "buy":
-                if float(row.price) < ticker["c"]:
-                    self.delete_row(order_id=row.order_id)
-                    market = Market(
-                        coin_set=row.order_coin,
-                        price=row.price,
-                        count=row.order_quantity,
-                    )
-                    market_buy_coin(market)
-            else:
-                if float(row.price) > ticker["c"]:
-                    self.delete_row(order_id=row.order_id)
-                    market = Market(
-                        coin_set=row.order_coin,
-                        price=row.price,
-                        count=row.order_quantity,
-                    )
-                    market_sell_coin(market)
+        pass
+        # rows = self.get_rows_from_db(coin)
+        # for row in rows:
+        #     if row.order_direction == "buy":
+        #         if float(row.price) < float(ticker["c"]):
+        #             self.delete_row(order_id=row.order_id)
+        #             market = Market(
+        #                 coin_set=row.order_coin,
+        #                 price=row.price,
+        #                 count=row.order_quantity,
+        #             )
+        #             market_buy_coin(market)
+        #     else:
+        #         if float(row.price) > float(ticker["c"]):
+        #             self.delete_row(order_id=row.order_id)
+        #             market = Market(
+        #                 coin_set=row.order_coin,
+        #                 price=row.price,
+        #                 count=row.order_quantity,
+        #             )
+        #             market_sell_coin(market)
 
     async def binance_ws(self):
         url = "wss://stream.binance.com:9443/ws/!ticker@arr"
 
         async with websockets.connect(url) as ws:
             while True:
+                await asyncio.sleep(1)
                 data = await ws.recv()
                 data_json = json.loads(data)
                 for ticker in data_json:
