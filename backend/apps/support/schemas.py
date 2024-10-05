@@ -21,10 +21,10 @@ class TicketEnum(str, Enum):
     
 
 class RequestEnum(str, Enum):
-    issue = 'Technical issue'
-    frequest =  "Feature request"
-    generel_equiry ="General Equiry"
-    feedback = 'Feedback'
+    issue = "Technical Issue"
+    frequest = "Feature Request"
+    generel_equiry = "General Enquiry"
+    feedback = "Feedback"
 
 
 class Ticket(pydantic.BaseModel):

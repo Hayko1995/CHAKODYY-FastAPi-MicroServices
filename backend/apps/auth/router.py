@@ -1,11 +1,9 @@
 import logging
 import jwt
 import os
-import pika
 
 import fastapi
 import sqlalchemy.orm as orm
-import uvicorn
 
 import apps.auth.service as _services
 import db.database as database
@@ -45,10 +43,9 @@ async def create_user(
     db_user = await _services.get_user_by_email(email=user.email, db=db)
 
     if db_user:
-        logging.info("User with that email already exists ")
-        raise fastapi.HTTPException(
-            status_code=200, detail="User with that email already exists "
-        )
+        logging.info("User with the given email already exists")
+        data = {"message": "User with the given email already exists"}
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=data)
 
     user = await _services.create_user(user=user, db=db)
 

@@ -21,22 +21,25 @@ def verefy_user(user: _models.User, db: _orm.Session):
 async def create_ticket(user_id, ticket: Ticket, db: _orm.Session):
     try:
         if ticket.id == -1:
-            ticket = _models.Ticket(
-                text=ticket.text, user_id=user_id, status=ticket.status
+            ticket_obj = _models.Ticket(
+                text=ticket.text, user_id=user_id, 
+                status=ticket.status, request_type=ticket.request_type
             )
-            db.add(ticket)
+            db.add(ticket_obj)
             db.commit()
         else:
-            _ = (
+            ticket_obj = (
                 db.query(_models.Ticket)
                 .filter(
                     _models.Ticket.id == ticket.id and _models.Ticket.user_id == user_id
                 )
                 .first()
             )
-            _.status = ticket.status
-            _.text = ticket.text
-            db.add(_)
+            ticket_obj.status = ticket.status
+            ticket_obj.text = ticket.text
+            ticket_obj.request_type = ticket.request_type
+
+            db.add(ticket_obj)
             db.commit()
         return True
     except Exception as e:
