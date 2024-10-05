@@ -28,11 +28,20 @@ class RequestEnum(str, Enum):
     feedback = "Feedback"
 
 
-class Ticket(pydantic.BaseModel):
-    id: Optional[int] = -1
-    status: TicketEnum = TicketEnum.ACTIVE
+class CreateTicketRequest(pydantic.BaseModel):
+    status: TicketEnum
     text: str
-    request_type: RequestEnum = RequestEnum.generel_equiry
+    request_type: RequestEnum
+
+    class Config:
+        from_attributes = True
+
+
+class UpdateTicketRequest(pydantic.BaseModel):
+    id: int
+    text: str
+    status: TicketEnum
+    request_type: RequestEnum
 
     class Config:
         from_attributes = True

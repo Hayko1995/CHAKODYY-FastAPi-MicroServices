@@ -1,20 +1,34 @@
+import json
+
 import db.models as _models
 import sqlalchemy.orm as _orm
 
 from apps.auth.service import get_user_by_id
-from apps.support.schemas import Ticket, TicketEnum
+from apps.support.schemas import CreateTicketRequest, TicketEnum, UpdateTicketRequest
 
 
-async def create_ticket(user_id, ticket: Ticket, db: _orm.Session):
+async def create_ticket(user_id, ticket: CreateTicketRequest, db: _orm.Session):
     try:
-        if ticket.id == -1:
-            ticket_obj = _models.Ticket(
-                text=ticket.text, user_id=user_id, 
-                status=ticket.status, request_type=ticket.request_type
-            )
-            db.add(ticket_obj)
-            db.commit()
-        else:
+        ticket_obj = _models.Ticket(
+            text=ticket.text, user_id=user_id, 
+            status=ticket.status, request_type=ticket.request_type
+        )
+        db.add(ticket_obj)
+        db.commit()
+        return True
+    except Exception as e:
+        print(e)
+        return False
+    
+
+async def update_ticket(user_id, ticket: UpdateTicketRequest, db: _orm.Session):
+    try:
+        # Verify user.
+        user = await get_user_by_id(user_id, db)
+        if user == None:
+            return "User not found"
+
+        try:
             ticket_obj = (
                 db.query(_models.Ticket)
                 .filter(
@@ -22,46 +36,103 @@ async def create_ticket(user_id, ticket: Ticket, db: _orm.Session):
                 )
                 .first()
             )
-            ticket_obj.status = ticket.status
+
             ticket_obj.text = ticket.text
+            ticket_obj.status = ticket.status
             ticket_obj.request_type = ticket.request_type
 
             db.add(ticket_obj)
             db.commit()
-        return True
+            return "success"
+        except:
+            return "Ticket not found"
     except Exception as e:
         print(e)
         return False
+    
 
-
-async def get_tickets(user_id, ticket: int, db: _orm.Session):
+async def get_ticket(user_id, ticket_id: int, db: _orm.Session):
     try:
+        # Verify user.
         user = await get_user_by_id(user_id, db)
-        if ticket == -1:
-            if user.is_admin:
-                return db.query(_models.Ticket).all()
-            return (
-                db.query(_models.Ticket)
-                .filter(_models.Ticket.user_id == str(user_id))
-                .all()
-            )
+        if user == None:
+            return "User not found"
 
-        else:
+        try:
             res = (
                 db.query(_models.Ticket)
                 .filter(
-                    _models.Ticket.user_id == str(user_id), _models.Ticket.id == ticket
+                    _models.Ticket.user_id == str(user_id), _models.Ticket.id == ticket_id
                 )
                 .first()
             )
-            return [res]
+            res_data = {
+                "id": res.id,
+                "text": res.text,
+                "status": res.status,
+                "request_type": res.request_type,
+                "created_at": str(res.created_at),
+                "updated_at": str(res.updated_at)
+            }
+            return res_data
+        except:
+            return "Ticket not found"
 
     except Exception as e:
         print(e)
         return "Server error"
 
 
-async def remove_ticket(user_id, ticket: int, db: _orm.Session):
+async def get_tickets(user_id, db: _orm.Session):
+    try:
+        # Verify user.
+        user = await get_user_by_id(user_id, db)
+        if user == None:
+            return "User not found"
+
+        if user.is_admin:
+            res = db.query(_models.Ticket).all()
+
+            res_data = []
+            for item in res:
+                result = {
+                    "id": item.id,
+                    "text": item.text,
+                    "status": item.status,
+                    "request_type": item.request_type,
+                    "created_at": str(item.created_at),
+                    "updated_at": str(item.updated_at)
+                }
+                res_data.append(result)
+            return res_data
+        
+        try:
+            res = (
+                db.query(_models.Ticket)
+                .filter(_models.Ticket.user_id == str(user_id))
+                .all()
+            )
+            res_data = []
+            for item in res:
+                result = {
+                    "id": item.id,
+                    "text": item.text,
+                    "status": item.status,
+                    "request_type": item.request_type,
+                    "created_at": str(item.created_at),
+                    "updated_at": str(item.updated_at)
+                }
+                res_data.append(result)
+            return res_data
+        except:
+            return "Ticket not found"
+
+    except Exception as e:
+        print(e)
+        return "Server error"
+
+
+async def remove_ticket(user_id, ticket_id: int, db: _orm.Session):
     try:
         # Verify user.
         user = await get_user_by_id(user_id, db)
@@ -70,7 +141,7 @@ async def remove_ticket(user_id, ticket: int, db: _orm.Session):
         
         try:
             model = (
-                db.query(_models.Ticket).filter(_models.Ticket.id == ticket).first()
+                db.query(_models.Ticket).filter(_models.Ticket.id == ticket_id).first()
             )
 
             """
@@ -91,7 +162,7 @@ async def remove_ticket(user_id, ticket: int, db: _orm.Session):
         return "Server error"
 
 
-async def resolve_ticket_by_admin(user_id, ticket: int, db: _orm.Session):
+async def resolve_ticket_by_admin(user_id, ticket_id: int, db: _orm.Session):
     try:
         # Verify user.
         user = await get_user_by_id(user_id, db)
@@ -102,7 +173,7 @@ async def resolve_ticket_by_admin(user_id, ticket: int, db: _orm.Session):
         if user.is_admin:
             try:
                 model = (
-                    db.query(_models.Ticket).filter(_models.Ticket.id == ticket).first()
+                    db.query(_models.Ticket).filter(_models.Ticket.id == ticket_id).first()
                 )
 
                 """
