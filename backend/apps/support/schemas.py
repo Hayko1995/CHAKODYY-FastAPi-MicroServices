@@ -1,7 +1,7 @@
-import datetime
+import pydantic
+
 from enum import Enum
 from typing import Optional
-import pydantic
 
 
 class UserBase(pydantic.BaseModel):
@@ -18,6 +18,7 @@ class TicketEnum(str, Enum):
     WARNING = "warning"
     ISSUE = "issue"
     RESOLVED = "resolved"
+    CANCELLED = "cancelled"
     
 
 class RequestEnum(str, Enum):

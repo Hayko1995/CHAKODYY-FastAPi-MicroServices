@@ -40,10 +40,52 @@ async def get_ticket(
 
 
 @support.delete("/ticket")
-async def delete_ticket(
+async def remove_ticket(
     ticket: int = -1,
     db: orm.Session = fastapi.Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
 
-    return await services.remove_tickets(user_id=payload["id"], ticket=ticket, db=db)
+    res = await services.remove_ticket(user_id=payload["id"], ticket=ticket, db=db)
+    if res == "success":
+        data = {"message": "Ticket deleted successfully"}
+        return JSONResponse(status_code=status.HTTP_200_OK, content=data)
+    if res == "Already removed":
+        data = {"message": "The ticket is already removed"}
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=data)
+    if res == "User not found":
+        data = {"message": "User not found"}
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=data)
+    if res == "Ticket not found":
+        data = {"message": "Ticket not found"}
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=data)
+    if res == "Server error":
+        data = {"message": "Internal Server Error"}
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=data)
+    
+
+@support.post("/resolve-ticket")
+async def resolve_ticket_by_admin(
+    ticket: int = -1,
+    db: orm.Session = fastapi.Depends(database.get_db),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
+    res = await services.resolve_ticket_by_admin(user_id=payload["id"], ticket=ticket, db=db)
+    if res == "success":
+        data = {"message": "Ticket resolved successfully"}
+        return JSONResponse(status_code=status.HTTP_201_CREATED, content=data)
+    if res == "Already removed":
+        data = {"message": "The ticket is already removed"}
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=data)
+    if res == "Already resolved":
+        data = {"message": "The ticket is already resolved"}
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=data)
+    if res == "User not found":
+        data = {"message": "User not found"}
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=data)
+    if res == "Ticket not found":
+        data = {"message": "Ticket not found"}
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=data)
+    if res == "Server error":
+        data = {"message": "Internal Server Error"}
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=data)

@@ -1,21 +1,8 @@
-import jwt
-import sqlalchemy.orm as _orm
-import passlib.hash as _hash
-import email_validator as _email_check
-import fastapi as _fastapi
-import fastapi.security as _security
-from passlib.hash import pbkdf2_sha256
-from apps.notification.email_service import notification
-from apps.support.schemas import Ticket
-from apps.auth.service import get_user_by_id
-import db.database as database
-import apps.auth.schemas as _schemas
 import db.models as _models
+import sqlalchemy.orm as _orm
 
-
-def verefy_user(user: _models.User, db: _orm.Session):
-    user.is_verified = True
-    db.commit()
+from apps.auth.service import get_user_by_id
+from apps.support.schemas import Ticket, TicketEnum
 
 
 async def create_ticket(user_id, ticket: Ticket, db: _orm.Session):
@@ -60,7 +47,6 @@ async def get_tickets(user_id, ticket: int, db: _orm.Session):
             )
 
         else:
-            print(ticket)
             res = (
                 db.query(_models.Ticket)
                 .filter(
@@ -75,21 +61,68 @@ async def get_tickets(user_id, ticket: int, db: _orm.Session):
         return "Server error"
 
 
-async def remove_tickets(user_id, ticket: int, db: _orm.Session):
+async def remove_ticket(user_id, ticket: int, db: _orm.Session):
     try:
+        # Verify user.
         user = await get_user_by_id(user_id, db)
-        if ticket != -1:
-            if user.is_admin:
+        if user == None:
+            return "User not found"
+        
+        try:
+            model = (
+                db.query(_models.Ticket).filter(_models.Ticket.id == ticket).first()
+            )
+
+            """
+            Check if the user already removed the ticket, 
+            then don't allow to remove it once again.
+            """
+            if model.status == TicketEnum.CANCELLED:
+                return "Already removed"
+
+            model.status = TicketEnum.CANCELLED
+            db.commit()
+            res = "success"
+        except:
+            res = "Ticket not found"
+        return res
+    except Exception as e:
+        print(e)
+        return "Server error"
+
+
+async def resolve_ticket_by_admin(user_id, ticket: int, db: _orm.Session):
+    try:
+        # Verify user.
+        user = await get_user_by_id(user_id, db)
+        if user == None:
+            return "User not found"
+        
+        # Verify user is admin.
+        if user.is_admin:
+            try:
                 model = (
                     db.query(_models.Ticket).filter(_models.Ticket.id == ticket).first()
                 )
-                model.status = "resolved"
+
+                """
+                Check if the user removed the ticket or it's already resolved, 
+                then don't allow the admin to resolve it.
+                """
+                if model.status == TicketEnum.CANCELLED:
+                    return "Already removed"
+                if model.status == TicketEnum.RESOLVED:
+                    return "Already resolved"
+                
+                model.status = TicketEnum.RESOLVED
                 db.commit()
-            return {"status": "sucsess"}
-
+                res = "success"
+            except:
+                res = "Ticket not found"
         else:
-            return {"status": "unsucsess"}
+            res = "User is not the admin"
 
+        return res
     except Exception as e:
         print(e)
         return "Server error"

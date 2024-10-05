@@ -39,7 +39,7 @@ def get_user_by_email_hard(email: str, db: _orm.Session):
     return db.query(_models.User).filter(_models.User.email == email).first()
 
 
-def verefy_user(user: _models.User, db: _orm.Session):
+def verify_user(user: _models.User, db: _orm.Session):
     user.is_verified = True
     db.commit()
 
@@ -164,8 +164,11 @@ def send_otp(email, otp):
 
 
 async def get_user_by_id(id: int, db: _orm.Session):
-    
-    return db.query(_models.User).filter(_models.User.id == id).first()
+    try:
+        res = db.query(_models.User).filter(_models.User.id == id).first()
+        return res
+    except:
+        return None
 
 
 async def delete_user_by_id(id: int, db: _orm.Session):
