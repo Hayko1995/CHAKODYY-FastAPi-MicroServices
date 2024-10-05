@@ -1,16 +1,13 @@
-from ast import literal_eval
 import json
-from typing import List
-from urllib import response
 
-from fastapi import HTTPException
-
-from apps.converter.repository import ConvertRepository, RedisRepository
-from apps.converter.schema import Book, BuyCoin, Market, SetCoin
 import asyncio_redis
 import sqlalchemy.orm as _orm
 
+from typing import List
+
 from apps.auth.service import get_user_by_id
+from apps.converter.repository import ConvertRepository, RedisRepository
+from apps.converter.schema import BuyCoin, Market, SetCoin
 from db import models
 
 

@@ -1,22 +1,20 @@
-from abc import ABC
+import asyncio
 import json
-from fastapi import Depends
+import os
 import websocket
-from apps.converter.router import market_buy_coin, market_sell_coin
-from apps.converter.schema import Market
-import db.models as _models
+import websockets
+
 import db.database as database
-from ast import literal_eval
+import db.models as _models
 import sqlalchemy.orm as _orm
 
-import asyncio
-import websockets
-import json
-
-import websocket
-
+from abc import ABC
+from ast import literal_eval
 from dotenv import load_dotenv
-import os
+from fastapi import Depends
+
+from apps.converter.router import market_buy_coin, market_sell_coin
+from apps.converter.schema import Market
 
 # Load environment variables from .env file
 load_dotenv()

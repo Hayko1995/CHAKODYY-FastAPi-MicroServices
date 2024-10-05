@@ -1,23 +1,22 @@
-from urllib import response
 import uuid
 
 import fastapi
-
-from apps.auth.router import jwt_validation
-from apps.converter import service
 import db.database as database
 import db.models as _models
 import sqlalchemy.orm as _orm
 
 from fastapi import APIRouter, Depends, HTTPException
-from depends import get_convert_service, get_redis_service
+from urllib import response
+
+from apps.auth.router import jwt_validation
+from apps.converter import service
 from apps.converter.schema import (
     Market,
-    LimitRequest,
     ReqBody,
     SetCoin,
 )
 from apps.converter.service import ConvertService, RedisService
+from depends import get_convert_service, get_redis_service
 
 
 router = APIRouter(prefix="/api", tags=["converter"])

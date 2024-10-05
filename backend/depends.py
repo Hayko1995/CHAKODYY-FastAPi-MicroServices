@@ -1,16 +1,8 @@
+import asyncio_redis
 import redis
+
 from apps.converter.repository import ConvertRepository, RedisRepository
 from apps.converter.service import ConvertService, RedisService
-from dependency_injector import containers, providers
-import asyncio_redis
-
-
-"""
-dependenci injection file 
-"""
-
-# repository
-
 
 redis_repository = RedisRepository()
 convert_repository = ConvertRepository()
