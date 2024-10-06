@@ -57,7 +57,7 @@ async def delete_contest(
     return await services.delete_contest(payload=payload, id=id, db=db)
 
 
-@contest.post("/update_contest")
+@contest.put("/contest")
 async def update_contest(
     contest: schemas.UpdateContest,
     db: orm.Session = fastapi.Depends(database.get_db),

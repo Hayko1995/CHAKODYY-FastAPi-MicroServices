@@ -40,6 +40,7 @@ class CreateTicketRequest(pydantic.BaseModel):
 class UpdateTicketRequest(pydantic.BaseModel):
     id: int
     text: str
+    action_owner: int
     status: TicketEnum
     request_type: RequestEnum
 

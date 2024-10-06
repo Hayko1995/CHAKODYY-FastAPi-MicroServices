@@ -91,14 +91,27 @@ class Ticket(database.Base):
     __tablename__ = "ticket"
 
     id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
+    ticket_number = _sql.Column(_sql.String, unique=True)
     user_id = _sql.Column(_sql.String, unique=False)
+    action_owner = _sql.Column(_sql.Integer, unique=False, default=0)
     text = _sql.Column(_sql.String, unique=False)
+    reporting_app = _sql.Column(_sql.String, unique=False, default="something")
     status = _sql.Column(_sql.String, unique=False)
     request_type = _sql.Column(_sql.String, unique=False)
     created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
     updated_at = _sql.Column(
         _sql.TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
     )
+
+
+class Ticket_history(database.Base):
+    __tablename__ = "ticket_history"
+
+    id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
+    ticket_number = _sql.Column(_sql.String, unique=False)
+    ticket_message = _sql.Column(_sql.String, unique=False)
+    created_by = _sql.Column(_sql.Integer, unique=False, default=0)
+    created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
 
 
 class Contest(database.Base):

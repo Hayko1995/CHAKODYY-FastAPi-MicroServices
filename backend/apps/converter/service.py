@@ -11,7 +11,7 @@ from typing import List
 
 from apps.auth.service import get_user_by_id
 from apps.converter.repository import ConvertRepository, RedisRepository
-from apps.converter.schema import BuyCoin, Market, SetCoin
+from apps.converter.schema import BuyCoin, Market
 from db import models
 
 

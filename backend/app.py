@@ -7,7 +7,6 @@ from fastapi import FastAPI
 
 from apps.auth.router import auth
 from apps.contest.router import contest
-from apps.converter.router import coin
 from apps.converter.router import router as converter
 from apps.converter.transactions import Transaction
 from apps.support.router import support

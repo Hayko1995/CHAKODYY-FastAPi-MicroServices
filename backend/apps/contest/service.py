@@ -69,6 +69,7 @@ async def update_contest(contest: CreateContest, payload: dict, db: _orm.Session
             _.contest_coins = contest.contest_coins
             _.trading_balance = (contest.trading_balance,)
             _.updated_at = payload["id"]
+            _.action_owner = contest.action_owner
 
             db.add(_)
             db.flush()
