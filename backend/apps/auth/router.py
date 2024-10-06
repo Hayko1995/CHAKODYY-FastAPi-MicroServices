@@ -1,32 +1,30 @@
 import logging
+import jwt
 import os
-from typing import Any
-from fastapi import Depends, HTTPException
-from fastapi import security
-import pika
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 import fastapi
-from fastapi import BackgroundTasks
-import uvicorn
 import sqlalchemy.orm as orm
-import jwt
 
-
-from apps.auth import schemas
 import apps.auth.service as _services
 import db.database as database
 
 from datetime import datetime
+from passlib.hash import pbkdf2_sha256
 
 from email_validator import validate_email, EmailNotValidError
+from fastapi import BackgroundTasks, Depends, HTTPException, security, status
+from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from typing import Any
 
+from apps.auth import schemas
 from db import models
-
-JWT_SECRET = os.getenv("JWT_SECRET")
 
 auth = fastapi.APIRouter(prefix="/auth", tags=["auth"])
 oauth2_scheme = security.OAuth2PasswordBearer("/auth/token")
+
+
+JWT_SECRET = os.getenv("JWT_SECRET")
 
 
 async def jwt_validation(token: str = fastapi.Depends(oauth2_scheme)):
@@ -45,17 +43,14 @@ async def create_user(
     db_user = await _services.get_user_by_email(email=user.email, db=db)
 
     if db_user:
-        logging.info("User with that email already exists ")
-        raise fastapi.HTTPException(
-            status_code=200, detail="User with that email already exists "
-        )
+        logging.info("User with the given email already exists")
+        data = {"message": "User with the given email already exists"}
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=data)
 
     user = await _services.create_user(user=user, db=db)
 
-    return fastapi.HTTPException(
-        status_code=201,
-        detail="User  Registered, Please verify email to activate account !",
-    )
+    data = {"message": "User registered. Please verify email to activate your account!"}
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content=data)
 
 
 @auth.post("/api/super_users")
@@ -161,17 +156,17 @@ async def generate_token(
         logging.info(
             "Email verification is pending. Please verify your email to proceed. "
         )
-        raise fastapi.HTTPException(
-            status_code=403,
-            detail="Email verification is pending. Please verify your email to proceed.",
-        )
+        data = {"message": "Email verification is pending. Please verify your email to proceed."}
+        return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content=data)
 
     if not user:
         logging.info("Invalid Credentials")
-        raise fastapi.HTTPException(status_code=401, detail="Invalid Credentials")
+        data = {"message": "Invalid Credentials"}
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=data)
 
     logging.info("JWT Token Generated")
-    return await _services.create_token(user=user)
+    access_token = await _services.create_token(user=user)
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content=access_token)
 
 
 @auth.get("/api/users/me", response_model=schemas.User)
@@ -194,10 +189,12 @@ async def send_otp_mail(
     user = await _services.get_user_by_email(email=userdata.email, db=db)
 
     if not user:
-        raise fastapi.HTTPException(status_code=404, detail="User not  found")
+        data = {"message": "User not found"}
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=data)
 
     if user.is_verified:
-        raise fastapi.HTTPException(status_code=400, detail="User is already verified")
+        data = {"message": "The user is already verified"}
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=data)
 
     # Generate and send OTP
     otp = _services.generate_otp()
@@ -210,7 +207,8 @@ async def send_otp_mail(
     db.add(user)
     db.commit()
 
-    return "OTP sent to your email"
+    data = {"message": "The OTP has been sent to your email address"}
+    return JSONResponse(status_code=status.HTTP_200_OK, content=data)
 
 
 @auth.post("/api/users/verify_otp")
@@ -220,10 +218,12 @@ async def verify_otp(
     user = await _services.get_user_by_email(email=userdata.email, db=db)
 
     if not user:
-        raise fastapi.HTTPException(status_code=404, detail="User  not found")
+        data = {"message": "User not found"}
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=data)
 
     if not user.otp or user.otp != userdata.otp:
-        raise fastapi.HTTPException(status_code=400, detail="Invalid OTP")
+        data = {"message": "Invalid OTP"}
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=data)
 
     # OTP expiration check.
     otp_duration = datetime.now() - user.otp_created_at
@@ -231,9 +231,8 @@ async def verify_otp(
 
     otp_expiration_minutes = float(os.environ.get("OTP_EXPIRATION_TIME_MINUTES"))
     if total_time_difference > otp_expiration_minutes:
-        raise fastapi.HTTPException(
-            status_code=400, detail="OTP expired. Generate a new OTP and try again."
-        )
+        data = {"message": "The OTP has been expired. Generate a new OTP and try again."}
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=data)
 
     # Update user's is_verified field
     user.is_verified = True
@@ -241,7 +240,8 @@ async def verify_otp(
     db.add(user)
     db.commit()
 
-    return "Email verified successfully"
+    data = {"message": "The email address is verified successfully"}
+    return JSONResponse(status_code=status.HTTP_200_OK, content=data)
 
 
 @auth.post("/api/users/forgot_password")  # add Test
@@ -253,7 +253,8 @@ async def forgot_password(
     user = await _services.get_user_by_email(email=userdata.email, db=db)
 
     if not user:
-        raise fastapi.HTTPException(status_code=404, detail="User not found")
+        data = {"message": "User not found"}
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=data)
 
     # Generate and send OTP
     otp = _services.generate_otp()
@@ -266,7 +267,8 @@ async def forgot_password(
     db.add(user)
     db.commit()
 
-    return "OTP was sent to the user's email."
+    data = {"message": "The OTP has been sent to your email address"}
+    return JSONResponse(status_code=status.HTTP_200_OK, content=data)
 
 
 @auth.post("/api/users/reset_password")  # add Test
@@ -277,11 +279,13 @@ async def reset_password(
     user = await _services.get_user_by_email(email=userdata.email, db=db)
 
     if not user:
-        raise fastapi.HTTPException(status_code=404, detail="User not found")
+        data = {"message": "User not found"}
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=data)
 
     # Verify OTP
     if not user.otp or user.otp != userdata.otp:
-        raise fastapi.HTTPException(status_code=400, detail="Invalid OTP")
+        data = {"message": "Invalid OTP"}
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=data)
 
     # OTP expiration check.
     otp_duration = datetime.now() - user.otp_created_at
@@ -289,16 +293,17 @@ async def reset_password(
 
     otp_expiration_minutes = float(os.environ.get("OTP_EXPIRATION_TIME_MINUTES"))
     if total_time_difference > otp_expiration_minutes:
-        raise fastapi.HTTPException(
-            status_code=400, detail="OTP expired. Generate a new OTP and try again."
-        )
+        data = {"message": "The OTP has been expired. Generate a new OTP and try again."}
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=data)
 
     if userdata.new_password != userdata.repeat_password:
-        raise fastapi.HTTPException(status_code=400, detail="Passwords do not match")
+        data = {"message": "Passwords do not match"}
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=data)
 
     # Update password in the database.
-    user.hashed_password = userdata.new_password
+    user.hashed_password = pbkdf2_sha256.hash(userdata.new_password)
     db.add(user)
     db.commit()
 
-    return "OTP was sent to the user's email."
+    data = {"message": "Password is reset successfully"}
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content=data)

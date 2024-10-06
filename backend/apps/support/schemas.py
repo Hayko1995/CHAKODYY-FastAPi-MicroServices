@@ -1,7 +1,7 @@
-import datetime
+import pydantic
+
 from enum import Enum
 from typing import Optional
-import pydantic
 
 
 class UserBase(pydantic.BaseModel):
@@ -18,20 +18,30 @@ class TicketEnum(str, Enum):
     WARNING = "warning"
     ISSUE = "issue"
     RESOLVED = "resolved"
+    CANCELLED = "cancelled"
     
 
 class RequestEnum(str, Enum):
-    issue = 'Technical issue'
-    frequest =  "Feature request"
-    generel_equiry ="General Equiry"
-    feedback = 'Feedback'
+    issue = "Technical Issue"
+    frequest = "Feature Request"
+    generel_equiry = "General Enquiry"
+    feedback = "Feedback"
 
 
-class Ticket(pydantic.BaseModel):
-    id: Optional[int] = -1
-    status: TicketEnum = TicketEnum.ACTIVE
+class CreateTicketRequest(pydantic.BaseModel):
+    status: TicketEnum
     text: str
-    request_type: RequestEnum = RequestEnum.generel_equiry
+    request_type: RequestEnum
+
+    class Config:
+        from_attributes = True
+
+
+class UpdateTicketRequest(pydantic.BaseModel):
+    id: int
+    text: str
+    status: TicketEnum
+    request_type: RequestEnum
 
     class Config:
         from_attributes = True
