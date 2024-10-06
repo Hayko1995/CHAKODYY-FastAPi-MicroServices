@@ -15,13 +15,11 @@ from apps.converter.schema import (
     Market,
     LimitRequest,
     ReqBody,
-    SetCoin,
 )
 from apps.converter.service import ConvertService, RedisService
 
 
 router = APIRouter(prefix="/api", tags=["converter"])
-coin = APIRouter(prefix="/api", tags=["coinSet"])
 
 
 @router.post("/get_buy_history", status_code=200)
@@ -219,33 +217,7 @@ def market_sell_coin(
         }
 
 
-@coin.get("/coin_set", responses={400: {"description": "Bad request"}})
-async def coins_get(
-    db: _orm.Session = Depends(database.get_db),
-    payload: dict = fastapi.Depends(jwt_validation),
-):
-    return await service.get_coins(db)
-
-
-@coin.post("/coin_set", responses={400: {"description": "Bad request"}})
-async def coin_set(
-    request: SetCoin,
-    db: _orm.Session = Depends(database.get_db),
-    payload: dict = fastapi.Depends(jwt_validation),
-):
-    return await service.set_coins(payload["id"], request, db)
-
-
-@coin.delete("/coin_set", responses={400: {"description": "Bad request"}})
-async def coins_delete(
-    request: int,
-    db: _orm.Session = Depends(database.get_db),
-    payload: dict = fastapi.Depends(jwt_validation),
-):
-    return await service.delete_coins(request, db)
-
-
-@coin.get("/balance", responses={400: {"description": "Bad request"}})
+@router.get("/balance", responses={400: {"description": "Bad request"}})
 async def get_balance(
     db: _orm.Session = Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),

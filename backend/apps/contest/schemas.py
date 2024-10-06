@@ -14,7 +14,6 @@ class CategoryEnum(str, Enum):
 
 
 class CreateContest(pydantic.BaseModel):
-    id: Optional[int] = -1
     title: str
     category: CategoryEnum = CategoryEnum.weekly
     start_time: datetime.date
@@ -26,3 +25,16 @@ class CreateContest(pydantic.BaseModel):
     class Config:
         from_attributes = True
 
+
+class UpdateContest(pydantic.BaseModel):
+    id: Optional[int] = -1
+    title: str
+    category: CategoryEnum = CategoryEnum.weekly
+    start_time: datetime.date
+    end_time: datetime.date
+    reward: str
+    contest_coins: str
+    trading_balance: str
+
+    class Config:
+        from_attributes = True

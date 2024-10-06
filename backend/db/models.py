@@ -128,16 +128,6 @@ class ContestParticipant(database.Base):
     withdraw_time = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
 
 
-class CoinSet(database.Base):
-    __tablename__ = "coin_set"
-
-    id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
-    coins = _sql.Column(_sql.String, unique=True)
-    created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
-    updated_at = _sql.Column(
-        _sql.TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
-    )
-
 
 class Status(enum.Enum):
     DRAFT = "draft"

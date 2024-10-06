@@ -1,3 +1,4 @@
+import fastapi
 import sqlalchemy.orm as _orm
 from apps.notification.email_service import notification
 from apps.contest.schemas import CreateContest
@@ -8,7 +9,11 @@ import datetime as _dt
 
 async def create_contest(contest: CreateContest, db: _orm.Session):
     try:
-        if contest.id == -1:
+        if (
+            not db.query(_models.Contest)
+            .filter(_models.Contest.title == contest.title)
+            .first()
+        ):
             contest = _models.Contest(
                 title=contest.title,
                 category=contest.category,
@@ -21,8 +26,23 @@ async def create_contest(contest: CreateContest, db: _orm.Session):
             db.add(contest)
             db.flush()
             db.commit()
-            db.refresh(contest, attribute_names=["id"])
+            db.refresh(contest)
             return contest
+        else:
+            {"status": "title already exists"}
+
+    except Exception as e:
+        print(e)
+        return False
+
+
+async def update_contest(contest: CreateContest, db: _orm.Session):
+    try:
+        if contest.id == -1:
+            return fastapi.HTTPException(
+                status_code=202,
+                detail="Missing id ",
+            )
         else:
             _ = (
                 db.query(_models.Contest)
@@ -79,7 +99,7 @@ async def join(user_id: int, id: int, db: _orm.Session):
     contest = get_contest_by_id(id, db)
     if get_contest_by_id(id, db) != None:
 
-        if _dt.datetime.now() > contest.start_time:
+        if _dt.datetime.now() < contest.end_time:
 
             if await get_user_by_id(user_id, db) != None:
                 try:
@@ -98,7 +118,7 @@ async def join(user_id: int, id: int, db: _orm.Session):
             else:
                 return {"result": "no user"}
         else:
-            return {"result": "not started"}
+            return {"result": "ended"}
     else:
         return {"result": "no contest"}
 
@@ -127,7 +147,10 @@ async def exit(id: int, db: _orm.Session):
 
     except Exception as e:
         print(e)
-        return {"status": "Server Error"}
+        return fastapi.HTTPException(
+            status_code=500,
+            detail="Server side error ",
+        )
 
 
 async def delete_participant(id: int, db: _orm.Session):
@@ -137,6 +160,7 @@ async def delete_participant(id: int, db: _orm.Session):
             .filter(_models.ContestParticipant.id == id)
             .delete()
         )
+        db.commit()
 
     except Exception as e:
         print(e)
