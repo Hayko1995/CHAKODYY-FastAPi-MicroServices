@@ -24,6 +24,7 @@ class ConvertRepository:
             )
             return coin
         except Exception as e:
+            print(e)
             raise NotImplemented
 
 

@@ -4,6 +4,8 @@ import os
 import websocket
 import websockets
 
+from apps.converter.service import ConvertService
+from depends import get_convert_service, get_redis_service
 import db.database as database
 import db.models as _models
 import sqlalchemy.orm as _orm
@@ -51,14 +53,15 @@ class Transaction(ABC):
 
         return {"status": "done"}
 
-    def get_rows_from_db(self, row_coin_set: str):
-        db = database.SessionLocal()
-        coin_sets = (
-            db.query(_models.OrderPending)
-            .filter(_models.OrderPending.order_coin == row_coin_set)
-            .all()
-        )
-        return coin_sets
+    def get_rows_from_redis(self, coin_set: str):
+        redis = get_redis_service()
+        rows = redis.get_value(coin_set)
+        return rows
+
+    def delete_rows_from_redis(self, key, row):
+        redis = get_redis_service()
+        status = redis.delete_value(key, row)
+        return status
 
     def delete_row(self, order_id: str):
         db = database.SessionLocal()
@@ -71,27 +74,36 @@ class Transaction(ABC):
         return coin_sets
 
     def process(self, coin, ticker):
-        pass
-        # rows = self.get_rows_from_db(coin)
-        # for row in rows:
-        #     if row.order_direction == "buy":
-        #         if float(row.price) < float(ticker["c"]):
-        #             self.delete_row(order_id=row.order_id)
-        #             market = Market(
-        #                 coin_set=row.order_coin,
-        #                 price=row.price,
-        #                 count=row.order_quantity,
-        #             )
-        #             market_buy_coin(market)
-        #     else:
-        #         if float(row.price) > float(ticker["c"]):
-        #             self.delete_row(order_id=row.order_id)
-        #             market = Market(
-        #                 coin_set=row.order_coin,
-        #                 price=row.price,
-        #                 count=row.order_quantity,
-        #             )
-        #             market_sell_coin(market)
+        service = get_convert_service()
+        rows = self.get_rows_from_redis(coin)
+        if rows:
+            for row in json.loads(rows):
+                if row["order_direction"] == "buy":
+                    if float(row["price"]) < float(ticker["c"]):
+
+                        self.delete_rows_from_redis(coin, row)
+                        market = Market(
+                            coin_set=row["coin_set"],
+                            price=row["price"],
+                            count=row["order_quantity"],
+                        )
+                        res = service.market_buy(
+                            market, id=row["user_id"], db=database.SessionLocal()
+                        )
+
+                        print(res)
+                else:
+                    if float(row["price"]) > float(ticker["c"]):
+                        self.delete_row(order_id=row.order_id)
+                        market = Market(
+                            coin_set=row["coin_set"],
+                            price=row["price"],
+                            count=row["order_quantity"],
+                        )
+                        res = service.market_sell(
+                            market, id=id, db=database.SessionLocal()
+                        )
+                        print(res)
 
     async def binance_ws(self):
         url = "wss://stream.binance.com:9443/ws/!ticker@arr"

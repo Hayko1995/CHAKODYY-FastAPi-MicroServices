@@ -37,10 +37,15 @@ async def create_contest(contest: CreateContest, payload: dict, db: _orm.Session
                 db.commit()
                 db.refresh(contest)
                 return contest
+            else:
+                return fastapi.HTTPException(
+                    status_code=200,
+                    detail="Have same contest",
+                )
         else:
             return fastapi.HTTPException(
                 status_code=200,
-                detail="Have same contest",
+                detail="Today you have contest",
             )
 
     except Exception as e:
@@ -125,14 +130,14 @@ async def get_contest(db: _orm.Session):
 
 
 def get_contest_by_id(id: int, db: _orm.Session):
-    return db.query(_models.Contest).filter(_models.Contest.id == id).first()
+    return db.query(_models.Contest).filter(_models.Contest.contest_id == id).first()
 
 
 async def join(user_id: int, id: int, db: _orm.Session):
     contest = get_contest_by_id(id, db)
     if get_contest_by_id(id, db) != None:
 
-        if _dt.datetime.now() < contest.end_time:
+        if _dt.date.today() < contest.end_time:
 
             if await get_user_by_id(user_id, db) != None:
                 try:

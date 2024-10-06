@@ -162,12 +162,12 @@ def send_otp(email, otp):
         print(f"Failed to publish message: {err}")
 
 
-
 async def get_user_by_id(id: int, db: _orm.Session):
     try:
         res = db.query(_models.User).filter(_models.User.id == id).first()
         return res
-    except:
+    except Exception as e:
+        print(e)
         return None
 
 

@@ -34,9 +34,7 @@ class ConvertService:
             if to_coin == None:
                 return {"status": "not found to  coin "}
 
-            if float(to_coin.count) <= float(req_body.count) * float(
-                req_body.price
-            ):
+            if float(to_coin.count) <= float(req_body.count) * float(req_body.price):
                 return {"status": "not  enugth coins"}
 
             contest_id = (
@@ -81,9 +79,7 @@ class ConvertService:
             if to_coin == None:
                 return {"status": "not  found to coin "}
 
-            if float(to_coin.count) <= float(req_body.count) * float(
-                req_body.price
-            ):
+            if float(to_coin.count) <= float(req_body.count) * float(req_body.price):
                 return {"status": "not enugth coins "}
 
             to_coin.count = float(
@@ -116,37 +112,38 @@ class ConvertService:
                 "status": "unsuccess",
             }
 
-    def market_buy(self, req_body: Market, payload, db: _orm.Session):
+    def market_buy(self, req_body: Market, id, db: _orm.Session):
+        print("................................buy.....")
         req_body.coin_set = req_body.coin_set.upper()
         from_coin = req_body.coin_set[: req_body.coin_set.index("/")].upper()
         to_coin = req_body.coin_set[req_body.coin_set.index("/") + 1 :].upper()
 
         try:
 
-                from_coin = self.repository.get_coin(payload["id"], from_coin, db=db)
-                if from_coin == None:
-                    return {"status": "not found from coin "}
+            from_coin = self.repository.get_coin(id, from_coin, db=db)
 
-                to_coin = self.repository.get_coin(payload["id"], to_coin, db=db)
+            if from_coin == None:
+                return {"status": "not found from coin "}
 
-                if to_coin == None:
-                    return {"status": "not found to coin "}
+            to_coin = self.repository.get_coin(id, to_coin, db=db)
 
-                if float(to_coin.count) <= float(req_body.count) * float(
-                    req_body.price
-                ):
-                    return {"status": "not enugth coins"}
+            if to_coin == None:
+                return {"status": "not found to coin "}
 
-                to_coin.count = float(
-                    float(to_coin.count) + float(req_body.count) * float(req_body.price)
-                )
-                from_coin.count = from_coin.count - req_body.count
-                contest_id = (
-                    db.query(models.ContestParticipant)
-                    .filter(models.ContestParticipant.participant == payload["id"])
-                    .first()
-                    .contest_id
-                )
+            if float(to_coin.count) <= float(req_body.count) * float(req_body.price):
+                return {"status": "not enugth coins"}
+
+            to_coin.count = float(
+                float(to_coin.count) + float(req_body.count) * float(req_body.price)
+            )
+            from_coin.count = from_coin.count - req_body.count
+            contest_id = (
+                db.query(models.ContestParticipant)
+                .filter(models.ContestParticipant.participant == id)
+                .first()
+                .contest_id
+            )
+            if contest_id:
 
                 order = models.OrderArchived(
                     order_type="market",
@@ -155,12 +152,14 @@ class ConvertService:
                     order_quantity=req_body.count,
                     price=req_body.price,
                     order_status=True,
-                    user_id=payload["id"],
+                    user_id=id,
                     contest_id=contest_id,
                 )
                 db.add(order)
                 db.commit()
-                return req_body
+            else:
+                {"status": "contest id not found"}
+            return req_body
 
         except Exception as e:
             print(e)
@@ -168,17 +167,17 @@ class ConvertService:
                 "status": "unsuccess",
             }
 
-    def market_sell(self, req_body: Market, payload, db):
+    def market_sell(self, req_body: Market, id, db):
         req_body.coin_set = req_body.coin_set.upper()
         from_coin = req_body.coin_set[: req_body.coin_set.index("/")].upper()
         to_coin = req_body.coin_set[req_body.coin_set.index("/") + 1 :].upper()
 
         try:
-            from_coin = self.repository.get_coin(payload["id"], from_coin, db=db)
+            from_coin = self.repository.get_coin(id, from_coin, db=db)
             if from_coin == None:
                 return {"status": "not found from coin "}
 
-            to_coin = self.repository.get_coin(payload["id"], to_coin, db=db)
+            to_coin = self.repository.get_coin(id, to_coin, db=db)
 
             if to_coin == None:
                 return {"status": "not found to coin "}
@@ -195,7 +194,7 @@ class ConvertService:
 
             contest_id = (
                 db.query(models.ContestParticipant)
-                .filter(models.ContestParticipant.participant == payload["id"])
+                .filter(models.ContestParticipant.participant == id)
                 .first()
                 .contest_id
             )
@@ -207,7 +206,7 @@ class ConvertService:
                 order_quantity=req_body.count,
                 price=req_body.price,
                 order_status=True,
-                user_id=payload["id"],
+                user_id=id,
                 contest_id=contest_id,
             )
             db.add(order)
@@ -232,9 +231,6 @@ async def get_balance(id, db: _orm.Session):
         return False
 
 
-
-
-
 class RedisService:
     def __init__(self, repository: RedisRepository, connection) -> None:
         self.repository = repository
@@ -249,17 +245,47 @@ class RedisService:
         connection.keys()
         return connection.keys()
 
-    def set_value(self, key, value) -> None:
+    def set_value(self, request: Market, buy: str, payload: dict) -> None:
         connection = self.connection
-        redis_value = connection.get(key)
+        limit = {}
+        limit["user_id"] = payload["id"]
+        limit["coin_set"] = request.coin_set
+        limit["price"] = float(request.price)
+        limit["count"] = request.count
+        limit["order_direction"] = buy
+
+        item = {
+            "price": float(request.price),
+            "user_id": payload["id"],
+            "order_direction": buy,
+            "coin_set": request.coin_set,
+            "order_quantity": request.count,
+        }
+        redis_value = connection.get(request.coin_set)
         if redis_value == None:
-            return connection.set(str(key), json.dumps([value]))
+            return connection.set(str(request.coin_set), json.dumps([item]))
         redis_value = json.loads(redis_value)
+        if item not in redis_value:
+            redis_value.append(item)
 
-        redis_value.append(value)
+        return connection.set(str(str(request.coin_set)), json.dumps(redis_value))
 
-        return connection.set(str(key), json.dumps(redis_value))
-
-    def delete_value(self, key) -> None:
+    def set_full_key(self, key, value):
         connection = self.connection
-        return connection.delete(str(key))
+        connection.set(str(key), json.dumps(value))
+
+    def delete_value(self, key, row) -> None:
+        try:
+            connection = self.connection
+            values = connection.get(key)
+            values = json.loads(values)
+
+            # values.index(row)
+
+            del values[values.index(row)]
+            self.set_full_key(key, values)
+            return True
+        except Exception as e:
+            print(e)
+        return False
+        
