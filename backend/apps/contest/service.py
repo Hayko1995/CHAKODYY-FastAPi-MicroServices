@@ -7,36 +7,48 @@ import db.models as _models
 import datetime as _dt
 
 
-async def create_contest(contest: CreateContest, db: _orm.Session):
+async def create_contest(contest: CreateContest, payload: dict, db: _orm.Session):
     try:
         if (
             not db.query(_models.Contest)
-            .filter(_models.Contest.title == contest.title)
+            .filter(_models.Contest.start_time == contest.start_time)
             .first()
         ):
-            contest = _models.Contest(
-                title=contest.title,
-                category=contest.category,
-                start_time=contest.start_time,
-                end_time=contest.end_time,
-                reward=contest.reward,
-                contest_coins=contest.contest_coins,
-                trading_balance=contest.trading_balance,
+            item = (
+                db.query(_models.Contest)
+                .filter(_models.Contest.title == contest.title)
+                .first()
             )
-            db.add(contest)
-            db.flush()
-            db.commit()
-            db.refresh(contest)
-            return contest
+
+            if not item:
+                contest = _models.Contest(
+                    title=contest.title,
+                    category=contest.category,
+                    start_time=contest.start_time,
+                    end_time=contest.end_time,
+                    reward=contest.reward,
+                    contest_coins=contest.contest_coins,
+                    trading_balance=contest.trading_balance,
+                    created_by=payload["id"],
+                    updated_by=payload["id"],
+                )
+                db.add(contest)
+                db.flush()
+                db.commit()
+                db.refresh(contest)
+                return contest
         else:
-            {"status": "title already exists"}
+            return fastapi.HTTPException(
+                status_code=200,
+                detail="Have same contest",
+            )
 
     except Exception as e:
         print(e)
         return False
 
 
-async def update_contest(contest: CreateContest, db: _orm.Session):
+async def update_contest(contest: CreateContest, payload: dict, db: _orm.Session):
     try:
         if contest.id == -1:
             return fastapi.HTTPException(
@@ -56,6 +68,7 @@ async def update_contest(contest: CreateContest, db: _orm.Session):
             _.reward = contest.reward
             _.contest_coins = contest.contest_coins
             _.trading_balance = (contest.trading_balance,)
+            _.updated_at = payload["id"]
 
             db.add(_)
             db.flush()
@@ -67,20 +80,39 @@ async def update_contest(contest: CreateContest, db: _orm.Session):
         return False
 
 
-async def delete_contest(payload: dict, id: str, db: _orm.Session):
+async def delete_contest(payload: dict, id: int, db: _orm.Session):
 
     user = await get_user_by_id(payload["id"], db)
 
     if user.is_admin:
         try:
-            db.query(_models.Contest).filter(_models.Contest.id == id).delete()
-            db.commit()
-            return True
+            data = db.query(_models.Contest).filter(_models.Contest.id == id).first()
+            if data:
+                data.status = "cancelled"
+                db.commit()
+                db.refresh(data)
+                id = data.id
+                return fastapi.HTTPException(
+                    status_code=200,
+                    detail=f"contest with {id} archived",
+                )
+            else:
+                return fastapi.HTTPException(
+                    status_code=200,
+                    detail=f"contest with id {id} does not exist",
+                )
+
         except Exception as e:
             print(e)
-            return False
+            return fastapi.HTTPException(
+                status_code=500,
+                detail="Server error",
+            )
     else:
-        return False
+        return fastapi.HTTPException(
+            status_code=200,
+            detail="You are not admin ",
+        )
 
 
 async def get_contest(db: _orm.Session):

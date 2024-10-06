@@ -4,6 +4,8 @@ import enum
 import sqlalchemy as _sql
 import sqlalchemy.orm as _orm
 from passlib.hash import pbkdf2_sha256
+from apps.contest.schemas import StatusEnum
+from sqlalchemy import Date
 from db.database import Base, engine
 import db.database as database
 from sqlalchemy import Enum
@@ -102,14 +104,19 @@ class Ticket(database.Base):
 class Contest(database.Base):
     __tablename__ = "contest"
 
-    id = _sql.Column(_sql.Integer, primary_key=True, index=True, autoincrement=True)
+    contest_id = _sql.Column(
+        _sql.Integer, primary_key=True, index=True, autoincrement=True
+    )
     title = _sql.Column(_sql.String, unique=True)
     category = _sql.Column(_sql.String, unique=False)
-    start_time = _sql.Column(_sql.DateTime)
-    end_time = _sql.Column(_sql.DateTime)
-    reward = _sql.Column(_sql.String, unique=False)
+    start_time = _sql.Column(Date)
+    end_time = _sql.Column(Date)
+    reward = _sql.Column(_sql.String, default="USDT")
+    status = _sql.Column(_sql.String, default=StatusEnum.upcoming)
     contest_coins = _sql.Column(_sql.String, unique=False)
     trading_balance = _sql.Column(_sql.String, unique=False)
+    created_by = _sql.Column(_sql.Integer)
+    updated_by = _sql.Column(_sql.Integer)
     created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
     updated_at = _sql.Column(
         _sql.TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
@@ -126,7 +133,6 @@ class ContestParticipant(database.Base):
     is_withdrawn = _sql.Column(_sql.Boolean, default=False)
     joining_time = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
     withdraw_time = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
-
 
 
 class Status(enum.Enum):

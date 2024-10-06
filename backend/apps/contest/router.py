@@ -30,7 +30,7 @@ async def create_contest(
     db: orm.Session = fastapi.Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
-    return await services.create_contest(contest=contest, db=db)
+    return await services.create_contest(contest=contest, payload=payload, db=db)
 
 
 @contest.get("/contest")
@@ -50,21 +50,11 @@ async def get_contest(
 
 @contest.delete("/contest")
 async def delete_contest(
-    id: str,
+    id: int,
     db: orm.Session = fastapi.Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
-    status = await services.delete_contest(payload=payload, id=id, db=db)
-    if status:
-        return fastapi.HTTPException(
-            status_code=200,
-            detail="Deleted",
-        )
-    else:
-        return fastapi.HTTPException(
-            status_code=500,
-            detail="Server side error",
-        )
+    return await services.delete_contest(payload=payload, id=id, db=db)
 
 
 @contest.post("/update_contest")
@@ -73,7 +63,7 @@ async def update_contest(
     db: orm.Session = fastapi.Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
-    return await services.update_contest(contest=contest, db=db)
+    return await services.update_contest(contest=contest, payload=payload, db=db)
 
 
 @contest.post("/join")
