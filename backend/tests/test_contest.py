@@ -68,7 +68,7 @@ def test_get_jwt():
         "/auth/api/token", headers=headers, data=json.dumps(json_str)
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 201
     global access_token
     access_token = response.json()["access_token"]
 
@@ -112,10 +112,9 @@ def test_get_contest():
     response = client.get("/contest/contest", headers=headers)
 
     assert response.status_code == 200
-    print(response.json())
     assert response.json()[0]["title"] == title
     global id
-    id = response.json()[0]["id"]
+    id = response.json()[0]["contest_id"]
 
 
 def test_delete_contest():

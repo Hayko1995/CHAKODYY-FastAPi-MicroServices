@@ -245,6 +245,20 @@ class RedisService:
         connection.keys()
         return connection.keys()
 
+    def get_all(self, id) -> List[dict]:
+        
+        
+        
+        connection = self.connection
+        connection.keys()
+        keys = connection.keys()
+        print("🐍 File: converter/service.py | Line: 252 | get_all ~ keys",keys)
+        res = {}
+        for i in keys:
+            print("🐍 File: converter/service.py | Line: 256 | get_all ~ connection.get(i)",connection.get(i))
+            res[i] = connection.get(i)
+        return res
+
     def set_value(self, request: Market, buy: str, payload: dict) -> None:
         connection = self.connection
         limit = {}
@@ -288,4 +302,3 @@ class RedisService:
         except Exception as e:
             print(e)
         return False
-        

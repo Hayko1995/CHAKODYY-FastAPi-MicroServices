@@ -248,3 +248,14 @@ def limit_sell(
 ):
     service.set_value(request, "cell", payload)
     return {"status": "sucess"}
+
+
+@router.get(
+    "/pending-limit",
+    responses={400: {"description": "Bad request"}},
+)
+def get_panding(
+    service: RedisService = Depends(get_redis_service),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
+    return service.get_all(payload)
