@@ -97,6 +97,7 @@ class Ticket(database.Base):
     text = _sql.Column(_sql.String, unique=False)
     reporting_app = _sql.Column(_sql.String, unique=False, default="something")
     status = _sql.Column(_sql.String, unique=False)
+    subject = _sql.Column(_sql.String, unique=False)
     request_type = _sql.Column(_sql.String, unique=False)
     created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
     updated_at = _sql.Column(

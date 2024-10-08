@@ -43,6 +43,7 @@ class UpdateTicketRequest(pydantic.BaseModel):
     action_owner: int
     status: TicketEnum
     request_type: RequestEnum
+    subject: str
 
     class Config:
         from_attributes = True

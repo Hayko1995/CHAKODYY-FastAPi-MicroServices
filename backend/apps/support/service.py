@@ -58,13 +58,14 @@ async def update_ticket(user_id, ticket: UpdateTicketRequest, db: _orm.Session):
                 .first()
             )
 
-            ticket_obj.text = ticket.text
             ticket_obj.status = ticket.status
             ticket_obj.request_type = ticket.request_type
+            ticket_obj.action_owner = ticket.action_owner
+            ticket_obj.subject = ticket.subject
 
             ticket_history = _models.Ticket_history(
                 ticket_number=ticket_obj.ticket_number,
-                ticket_message=ticket_obj.text,
+                ticket_message=ticket.subject,
                 created_by=user_id,
             )
 
@@ -88,6 +89,11 @@ async def get_ticket(user_id, ticket_id: int, db: _orm.Session):
             return "User not found"
 
         try:
+            if user.is_admin:
+                res = (
+                    db.query(_models.Ticket).all()
+                )
+                return res
             res = (
                 db.query(_models.Ticket)
                 .filter(
@@ -121,7 +127,11 @@ async def get_filtered_ticket(user_id, filter: str, db: _orm.Session):
             return "User not found"
         if user.is_admin:
             try:
-                res = db.query(_models.Ticket).filter(_models.Ticket.status == filter).all()
+                res = (
+                    db.query(_models.Ticket)
+                    .filter(_models.Ticket.status == filter)
+                    .all()
+                )
                 res_data = {
                     "id": res.id,
                     "text": res.text,
