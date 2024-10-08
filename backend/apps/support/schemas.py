@@ -47,3 +47,10 @@ class UpdateTicketRequest(pydantic.BaseModel):
 
     class Config:
         from_attributes = True
+
+class GetTickets(pydantic.BaseModel):
+    id:  Optional[int] 
+    status: Optional[str] 
+    
+class GetTicketHistory(pydantic.BaseModel):
+    ticket_number:  Optional[int] 

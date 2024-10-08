@@ -58,35 +58,11 @@ async def update_ticket(
 
 @support.get("/ticket")
 async def get_ticket(
-    ticket_id: int,
+    ticket: schemas.GetTickets,
     db: orm.Session = fastapi.Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
-    res = await services.get_ticket(user_id=payload["id"], ticket_id=ticket_id, db=db)
-    if res == "User not found":
-        data = {"message": "User not found"}
-        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=data)
-    if res == "Ticket not found":
-        data = {"message": "Ticket not found"}
-        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=data)
-    if res == "Server error":
-        data = {"message": "Internal Server Error"}
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=data
-        )
-    else:
-        return JSONResponse(status_code=status.HTTP_200_OK, content=res)
-
-
-@support.get("/filtered_ticket")
-async def get_filtered_ticket(
-    filter: str,
-    db: orm.Session = fastapi.Depends(database.get_db),
-    payload: dict = fastapi.Depends(jwt_validation),
-):
-    res = await services.get_filtered_ticket(
-        user_id=payload["id"], filter=filter, db=db
-    )
+    res = await services.get_ticket(user_id=payload["id"], ticket_id=ticket, db=db)
     if res == "User not found":
         data = {"message": "User not found"}
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=data)
@@ -104,10 +80,11 @@ async def get_filtered_ticket(
 
 @support.get("/ticket_history")
 async def get_ticket_history(
+    ticket: schemas.GetTicketHistory,
     db: orm.Session = fastapi.Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
-    res = await services.get_ticket_history(user_id=payload["id"], db=db)
+    res = await services.get_ticket_history(user_id=payload["id"], ticket=ticket,  db=db)
     if res == "User not found":
         data = {"message": "User not found"}
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=data)

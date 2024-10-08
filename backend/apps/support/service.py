@@ -1,5 +1,6 @@
 import json
 
+from apps.support import schemas
 import db.models as _models
 import sqlalchemy.orm as _orm
 
@@ -81,56 +82,24 @@ async def update_ticket(user_id, ticket: UpdateTicketRequest, db: _orm.Session):
         return False
 
 
-async def get_ticket(user_id, ticket_id: int, db: _orm.Session):
+async def get_ticket(user_id, ticket: schemas.GetTickets, db: _orm.Session):
     try:
         # Verify user.
         user = await get_user_by_id(user_id, db)
         if user == None:
             return "User not found"
-
         try:
-            if user.is_admin:
-                res = (
-                    db.query(_models.Ticket).all()
-                )
+            if user.is_admin and not ticket.id:
+                res = db.query(_models.Ticket).all()
                 return res
-            res = (
-                db.query(_models.Ticket)
-                .filter(
-                    _models.Ticket.user_id == str(user_id),
-                    _models.Ticket.id == ticket_id,
-                )
-                .first()
-            )
-            res_data = {
-                "id": res.id,
-                "text": res.text,
-                "status": res.status,
-                "request_type": res.request_type,
-                "created_at": str(res.created_at),
-                "updated_at": str(res.updated_at),
-            }
-            return res_data
-        except:
-            return "Ticket not found"
-
-    except Exception as e:
-        print(e)
-        return "Server error"
-
-
-async def get_filtered_ticket(user_id, filter: str, db: _orm.Session):
-    try:
-        # Verify user.
-        user = await get_user_by_id(user_id, db)
-        if user == None:
-            return "User not found"
-        if user.is_admin:
-            try:
+            if user.is_admin and ticket.id:
                 res = (
                     db.query(_models.Ticket)
-                    .filter(_models.Ticket.status == filter)
-                    .all()
+                    .filter(
+                        _models.Ticket.user_id == str(user_id),
+                        _models.Ticket.id == ticket.id,
+                    )
+                    .first()
                 )
                 res_data = {
                     "id": res.id,
@@ -141,25 +110,51 @@ async def get_filtered_ticket(user_id, filter: str, db: _orm.Session):
                     "updated_at": str(res.updated_at),
                 }
                 return res_data
-            except Exception as e:
-                print(e)
-                return "Ticket not found"
-        return "You are not admin"
+
+            if user.is_admin and ticket.status:
+                res = (
+                    db.query(_models.Ticket)
+                    .filter(
+                        _models.Ticket.user_id == str(user_id),
+                        _models.Ticket.status == ticket.status,
+                    )
+                    .all()
+                )
+                return res
+            return "Ticket not found"
+        except:
+            return "Ticket not found"
+
     except Exception as e:
         print(e)
         return "Server error"
 
 
-async def get_ticket_history(user_id, db: _orm.Session):
+
+async def get_ticket_history(
+    user_id, ticket: schemas.GetTicketHistory, db: _orm.Session
+):
     try:
         # Verify user.
         user = await get_user_by_id(user_id, db)
         if user == None:
             return "User not found"
 
-        if user.is_admin:
+        if user.is_admin and not ticket.ticket_number:
             try:
                 return db.query(_models.Ticket_history).all()
+            except Exception as e:
+                print(e)
+                return "Ticket not found"
+        if user.is_admin and ticket.ticket_number:
+            try:
+                return (
+                    db.query(_models.Ticket_history)
+                    .filter(
+                        _models.Ticket_history.ticket_number == ticket.ticket_number
+                    )
+                    .all()
+                )
             except Exception as e:
                 print(e)
                 return "Ticket not found"
