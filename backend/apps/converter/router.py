@@ -182,39 +182,6 @@ async def buy_coin(
     return {"status": "success", "coins": coins}
 
 
-# @router.post("/limit_sell", status_code=200)
-# def market_sell_coin(
-#     req_body: Market,
-#     db: _orm.Session = Depends(database.get_db),
-#     service: ConvertService = Depends(get_convert_service),
-#     payload: dict = fastapi.Depends(jwt_validation),
-# ):
-#     try:
-#         return service.limit_sell(req_body, payload, db=db)
-
-#     except Exception as e:
-#         print(e)
-#         return {
-#             "status": "unsuccess",
-#         }
-
-
-# @router.post("/limit_buy", status_code=200)
-# def market_sell_coin(
-#     req_body: Market,
-#     db: _orm.Session = Depends(database.get_db),
-#     service: ConvertService = Depends(get_convert_service),
-#     payload: dict = fastapi.Depends(jwt_validation),
-# ):
-#     try:
-#         return service.limit_buy(req_body, payload, db=db)
-
-#     except Exception as e:
-#         print(e)
-#         return {
-#             "status": "unsuccess",
-#         }
-
 
 @router.get("/balance", responses={400: {"description": "Bad request"}})
 async def get_balance(

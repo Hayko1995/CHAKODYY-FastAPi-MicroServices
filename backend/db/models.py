@@ -15,11 +15,17 @@ from sqlalchemy.orm import relationship
 import datetime as _dt
 import sqlalchemy as _sql
 import sqlalchemy.orm as _orm
+import pytz
 
 from passlib.hash import pbkdf2_sha256
 from sqlalchemy.sql import func
 
 Base.metadata.create_all(engine)
+
+local_tz = pytz.timezone('Asia/Dubai')
+
+def get_local_time():
+    return _dt.datetime.now(local_tz)
 
 
 class User(database.Base):
@@ -31,9 +37,9 @@ class User(database.Base):
     is_verified = _sql.Column(_sql.Boolean, default=False)
     is_admin = _sql.Column(_sql.Boolean, default=False)
     otp = _sql.Column(_sql.Integer)
-    otp_created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
+    otp_created_at = _sql.Column(_sql.DateTime, default=get_local_time())
     hashed_password = _sql.Column(_sql.String)
-    created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
+    created_at = _sql.Column(_sql.DateTime, default=get_local_time())
     updated_at = _sql.Column(
         _sql.TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
     )
@@ -99,7 +105,7 @@ class Ticket(database.Base):
     status = _sql.Column(_sql.String, unique=False)
     subject = _sql.Column(_sql.String, unique=False)
     request_type = _sql.Column(_sql.String, unique=False)
-    created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
+    created_at = _sql.Column(_sql.DateTime, default=get_local_time())
     updated_at = _sql.Column(
         _sql.TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
     )
@@ -112,7 +118,7 @@ class Ticket_history(database.Base):
     ticket_number = _sql.Column(_sql.String, unique=False)
     ticket_message = _sql.Column(_sql.String, unique=False)
     created_by = _sql.Column(_sql.Integer, unique=False, default=0)
-    created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
+    created_at = _sql.Column(_sql.DateTime, default=get_local_time())
 
 
 class Contest(database.Base):
@@ -131,7 +137,7 @@ class Contest(database.Base):
     trading_balance = _sql.Column(_sql.String, unique=False)
     created_by = _sql.Column(_sql.Integer)
     updated_by = _sql.Column(_sql.Integer)
-    created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
+    created_at = _sql.Column(_sql.DateTime, default=get_local_time())
     updated_at = _sql.Column(
         _sql.TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
     )
@@ -145,8 +151,8 @@ class ContestParticipant(database.Base):
     participant = _sql.Column(_sql.Integer)
 
     is_withdrawn = _sql.Column(_sql.Boolean, default=False)
-    joining_time = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
-    withdraw_time = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
+    joining_time = _sql.Column(_sql.DateTime, default=get_local_time())
+    withdraw_time = _sql.Column(_sql.DateTime, default=get_local_time())
 
 
 class Status(enum.Enum):
@@ -163,10 +169,11 @@ class OrderArchived(database.Base):
     )
     order_type = _sql.Column(_sql.String, nullable=False)
     order_direction = _sql.Column(_sql.String, nullable=False)
-    order_coin = _sql.Column(_sql.String, nullable=False)
+    from_coin = _sql.Column(_sql.String, nullable=False)
+    to_coin = _sql.Column(_sql.String, nullable=False)
     order_quantity = _sql.Column(_sql.Float, nullable=False)
     order_status = _sql.Column(_sql.Boolean, nullable=False)
-    created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
+    created_at = _sql.Column(_sql.DateTime, default=get_local_time())
     price = _sql.Column(_sql.Float, nullable=False, default=0)
     updated_at = _sql.Column(
         _sql.TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
@@ -186,11 +193,12 @@ class OrderPending(database.Base):
     )
     order_type = _sql.Column(_sql.String, nullable=False)
     order_direction = _sql.Column(_sql.String, nullable=False)
-    order_coin = _sql.Column(_sql.String, nullable=False)
+    from_coin = _sql.Column(_sql.String, nullable=False)
+    to_coin = _sql.Column(_sql.String, nullable=False)
     order_quantity = _sql.Column(_sql.Float, nullable=False)
     order_status = _sql.Column(_sql.Boolean, nullable=False)
     price = _sql.Column(_sql.Float, nullable=False, default=0)
-    created_at = _sql.Column(_sql.DateTime, default=_dt.datetime.now)
+    created_at = _sql.Column(_sql.DateTime, default=get_local_time())
     updated_at = _sql.Column(
         _sql.TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()
     )

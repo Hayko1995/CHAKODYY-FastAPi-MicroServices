@@ -19,7 +19,8 @@ class Book(BaseModel):
 
 
 class Market(BaseModel):
-    coin_set: str
+    from_coin: str
+    to_coin: str
     price: float
     count: float
 
@@ -52,9 +53,3 @@ class CoinScema(BaseModel):
 class ReqBody(BaseModel):
     coin_name: str
     coin_count: float
-
-
-class LimitRequest(BaseModel):
-    coins_pare: str
-    convert: dict
-

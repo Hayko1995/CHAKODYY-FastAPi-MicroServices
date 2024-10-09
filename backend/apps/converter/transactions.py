@@ -24,35 +24,6 @@ load_dotenv()
 
 class Transaction(ABC):
 
-    def on_message(self, ws, message):
-        global current_price
-        data = json.loads(message)
-        current_price = float(data["p"])
-
-        byte_literals = self.redis.get_keys()
-        if byte_literals != []:
-            string_values = [x.decode("utf-8") for x in byte_literals]
-
-            # Step 2: Convert to floats
-            float_values = [float(x) for x in string_values]
-
-            smaller_values = [value for value in float_values if value < current_price]
-            for value in smaller_values:
-                transactions = self.redis.get_value(str(value))
-                self.redis.delete_value(str(value))
-                if transactions is not None:
-                    transactions = literal_eval(transactions.decode("utf8"))
-                    for transaction in transactions:
-                        if "stop_convert" in transaction:
-                            transaction["price"] = transaction["stop_convert"]
-                            del transaction["stop_convert"]
-                            # limit_buy(transaction) # todo add buy or cell
-                        else:
-                            transaction["price_coin"] = current_price
-                            # convert_immediately(transaction)
-
-        return {"status": "done"}
-
     def get_rows_from_redis(self, coin_set: str):
         redis = get_redis_service()
         rows = redis.get_value(coin_set)
@@ -83,7 +54,8 @@ class Transaction(ABC):
 
                         self.delete_rows_from_redis(coin, row)
                         market = Market(
-                            coin_set=row["coin_set"],
+                            from_coin=row["from_coin"],
+                            to_coin=row["to_coin"],
                             price=row["price"],
                             count=row["order_quantity"],
                         )
@@ -96,7 +68,8 @@ class Transaction(ABC):
                     if float(row["price"]) > float(ticker["c"]):
                         self.delete_row(order_id=row.order_id)
                         market = Market(
-                            coin_set=row["coin_set"],
+                            from_coin=row["from_coin"],
+                            to_coin=row["to_coin"],
                             price=row["price"],
                             count=row["order_quantity"],
                         )
@@ -114,26 +87,7 @@ class Transaction(ABC):
                 data = await ws.recv()
                 data_json = json.loads(data)
                 for ticker in data_json:
-                    if ticker["s"] == "BTCUSDT":
-                        self.process("BTC/USDT", ticker)
-                    elif ticker["s"] == "ETHUSDT":
-                        self.process("ETH/USDT", ticker)
-                    elif ticker["s"] == "SOLUSDT":
-                        self.process("SOL/USDT", ticker)
-                    elif ticker["s"] == "NEARUSDT":
-                        self.process("NEAR/USDT", ticker)
-                    elif ticker["s"] == "MATICUSDT":
-                        self.process("MATIC/USDT", ticker)
-                    elif ticker["s"] == "TRXUSDT":
-                        self.process("TRX/USDT", ticker)
-                    elif ticker["s"] == "PEOPLEUSDT":
-                        self.process("PEOPLE/USDT", ticker)
-                    elif ticker["s"] == "IOUSDT":
-                        self.process("IOU/USDT", ticker)
-                    elif ticker["s"] == "DOGEUSDT":
-                        self.process("DOGE/USDT", ticker)
-                    elif ticker["s"] == "BNBUSDT":
-                        self.process("BNB/USDT", ticker)
+                    self.process(ticker["s"], ticker)
 
     def run(self):
         loop = asyncio.new_event_loop()

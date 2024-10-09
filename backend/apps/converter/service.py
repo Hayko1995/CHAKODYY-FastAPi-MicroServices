@@ -3,7 +3,6 @@ import json
 from fastapi import HTTPException
 
 from apps.converter.repository import ConvertRepository, RedisRepository
-from apps.converter.schema import Book, BuyCoin, Market
 import asyncio_redis
 import sqlalchemy.orm as _orm
 
@@ -20,9 +19,8 @@ class ConvertService:
         self.repository = repository
 
     def limit_buy(self, req_body: Market, payload, db: _orm.Session):
-        req_body.coin_set = req_body.coin_set.upper()
-        from_coin = req_body.coin_set[: req_body.coin_set.index("/")].upper()
-        to_coin = req_body.coin_set[req_body.coin_set.index("/") + 1 :].upper()
+        from_coin = req_body.from_coin.upper()
+        to_coin = req_body.to_coin.upper()
 
         try:
             from_coin = self.repository.get_coin(payload["id"], from_coin, db=db)
@@ -47,7 +45,8 @@ class ConvertService:
             order = models.OrderPending(
                 order_type="limit",
                 order_direction="buy",
-                order_coin=req_body.coin_set,
+                from_coin=req_body.from_coin,
+                to_coin=req_body.to_coin,
                 order_quantity=req_body.count,
                 price=req_body.price,
                 order_status=True,
@@ -64,9 +63,8 @@ class ConvertService:
             }
 
     def limit_sell(self, req_body: Market, payload, db: _orm.Session):
-        req_body.coin_set = req_body.coin_set.upper()
-        from_coin = req_body.coin_set[: req_body.coin_set.index("/")].upper()
-        to_coin = req_body.coin_set[req_body.coin_set.index("/") + 1 :].upper()
+        from_coin = req_body.from_coin.upper()
+        to_coin = req_body.to_coin.upper()
 
         try:
 
@@ -96,7 +94,8 @@ class ConvertService:
             order = models.OrderPending(
                 order_type="limit",
                 order_direction="cell",
-                order_coin=req_body.coin_set,
+                from_coin=req_body.from_coin,
+                to_coin=req_body.to_coin,
                 order_quantity=req_body.count,
                 price=req_body.price,
                 order_status=True,
@@ -114,9 +113,8 @@ class ConvertService:
 
     def market_buy(self, req_body: Market, id, db: _orm.Session):
         print("................................buy.....")
-        req_body.coin_set = req_body.coin_set.upper()
-        from_coin = req_body.coin_set[: req_body.coin_set.index("/")].upper()
-        to_coin = req_body.coin_set[req_body.coin_set.index("/") + 1 :].upper()
+        from_coin = req_body.from_coin.upper()
+        to_coin = req_body.to_coin.upper()
 
         try:
 
@@ -137,18 +135,19 @@ class ConvertService:
                 float(to_coin.count) + float(req_body.count) * float(req_body.price)
             )
             from_coin.count = float(from_coin.count) - float(req_body.count)
-            contest_id = (
+            contest = (
                 db.query(models.ContestParticipant)
                 .filter(models.ContestParticipant.participant == id)
                 .first()
-                .contest_id
             )
-            if contest_id:
+            if contest:
+                contest_id = contest.contest_id
 
                 order = models.OrderArchived(
                     order_type="market",
                     order_direction="buy",
-                    order_coin=req_body.coin_set,
+                    from_coin=req_body.from_coin,
+                    to_coin=req_body.to_coin,
                     order_quantity=req_body.count,
                     price=req_body.price,
                     order_status=True,
@@ -158,7 +157,7 @@ class ConvertService:
                 db.add(order)
                 db.commit()
             else:
-                {"status": "contest id not found"}
+                return {"status": "contest id not found"}
             return req_body
 
         except Exception as e:
@@ -168,9 +167,8 @@ class ConvertService:
             }
 
     def market_sell(self, req_body: Market, id, db):
-        req_body.coin_set = req_body.coin_set.upper()
-        from_coin = req_body.coin_set[: req_body.coin_set.index("/")].upper()
-        to_coin = req_body.coin_set[req_body.coin_set.index("/") + 1 :].upper()
+        from_coin = req_body.from_coin.upper()
+        to_coin = req_body.to_coin.upper()
 
         try:
             from_coin = self.repository.get_coin(id, from_coin, db=db)
@@ -187,10 +185,10 @@ class ConvertService:
             ):
                 return {"status": "not enugth coins"}
 
-            to_coin.count = float(
-                float(to_coin.count) - float(req_body.count) * 1 / float(req_body.price)
+            to_coin.count = float(to_coin.count) + float(req_body.count) *  float(
+                req_body.price
             )
-            from_coin.count = from_coin.count + req_body.count
+            from_coin.count = float(from_coin.count) - float(req_body.count)
 
             contest_id = (
                 db.query(models.ContestParticipant)
@@ -202,7 +200,8 @@ class ConvertService:
             order = models.OrderArchived(
                 order_type="market",
                 order_direction="sell",
-                order_coin=req_body.coin_set,
+                from_coin=req_body.from_coin,
+                to_coin=req_body.to_coin,
                 order_quantity=req_body.count,
                 price=req_body.price,
                 order_status=True,
@@ -246,24 +245,21 @@ class RedisService:
         return connection.keys()
 
     def get_all(self, id) -> List[dict]:
-        
-        
-        
+
         connection = self.connection
         connection.keys()
         keys = connection.keys()
-        print("🐍 File: converter/service.py | Line: 252 | get_all ~ keys",keys)
         res = {}
         for i in keys:
-            print("🐍 File: converter/service.py | Line: 256 | get_all ~ connection.get(i)",connection.get(i))
             res[i] = connection.get(i)
         return res
 
     def set_value(self, request: Market, buy: str, payload: dict) -> None:
         connection = self.connection
+        coin_set = request.from_coin + request.to_coin
         limit = {}
         limit["user_id"] = payload["id"]
-        limit["coin_set"] = request.coin_set
+        limit["coin_set"] = request.from_coin + request.to_coin
         limit["price"] = float(request.price)
         limit["count"] = request.count
         limit["order_direction"] = buy
@@ -272,17 +268,19 @@ class RedisService:
             "price": float(request.price),
             "user_id": payload["id"],
             "order_direction": buy,
-            "coin_set": request.coin_set,
+            "coin_set": request.from_coin + request.to_coin,
+            "from_coin": request.from_coin,
+            "to_coin": request.to_coin,
             "order_quantity": request.count,
         }
-        redis_value = connection.get(request.coin_set)
+        redis_value = connection.get(coin_set)
         if redis_value == None:
-            return connection.set(str(request.coin_set), json.dumps([item]))
+            return connection.set(coin_set, json.dumps([item]))
         redis_value = json.loads(redis_value)
         if item not in redis_value:
             redis_value.append(item)
 
-        return connection.set(str(str(request.coin_set)), json.dumps(redis_value))
+        return connection.set(coin_set, json.dumps(redis_value))
 
     def set_full_key(self, key, value):
         connection = self.connection
