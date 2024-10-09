@@ -136,7 +136,7 @@ class ConvertService:
             to_coin.count = float(
                 float(to_coin.count) + float(req_body.count) * float(req_body.price)
             )
-            from_coin.count = from_coin.count - req_body.count
+            from_coin.count = float(from_coin.count) - float(req_body.count)
             contest_id = (
                 db.query(models.ContestParticipant)
                 .filter(models.ContestParticipant.participant == id)
