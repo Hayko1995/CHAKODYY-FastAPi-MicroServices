@@ -92,7 +92,7 @@ async def delete_contest(payload: dict, id: int, db: _orm.Session):
 
     if user.is_admin:
         try:
-            data = db.query(_models.Contest).filter(_models.Contest.id == id).first()
+            data = db.query(_models.Contest).filter(_models.Contest.contest_id == id).first()
             if data:
                 data.status = "cancelled"
                 db.commit()
