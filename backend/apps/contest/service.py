@@ -170,13 +170,13 @@ async def exit(id: int, db: _orm.Session):
         )
         contest = (
             db.query(_models.Contest)
-            .filter(_models.Contest.id == contest_participant.contest_id)
+            .filter(_models.Contest.contest_id == contest_participant.contest_id)
             .first()
         )
 
-        if _dt.datetime.now() < contest.start_time:
+        if _dt.date.today() < contest.start_time:
             contest_participant.is_withdrawn = True
-            contest_participant.withdraw_time = _dt.datetime.now()
+            contest_participant.withdraw_time = _dt.date.now()
             db.add(contest_participant)
             db.commit()
             return True
