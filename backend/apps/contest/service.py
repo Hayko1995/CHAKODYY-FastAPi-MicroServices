@@ -1,7 +1,7 @@
 import fastapi
 import sqlalchemy.orm as _orm
 from apps.notification.email_service import notification
-from apps.contest.schemas import CreateContest
+from apps.contest.schemas import CreateContest, UpdateContest
 from apps.auth.service import get_user_by_id
 import db.models as _models
 import datetime as _dt
@@ -9,39 +9,30 @@ import datetime as _dt
 
 async def create_contest(contest: CreateContest, payload: dict, db: _orm.Session):
     try:
-        if (
-            not db.query(_models.Contest)
-            .filter(_models.Contest.start_time == contest.start_time)
-            .first()
-        ):
-            item = (
-                db.query(_models.Contest)
-                .filter(_models.Contest.title == contest.title)
-                .first()
-            )
 
-            if not item:
-                contest = _models.Contest(
-                    title=contest.title,
-                    category=contest.category,
-                    start_time=contest.start_time,
-                    end_time=contest.end_time,
-                    reward=contest.reward,
-                    contest_coins=contest.contest_coins,
-                    trading_balance=contest.trading_balance,
-                    created_by=payload["id"],
-                    updated_by=payload["id"],
-                )
-                db.add(contest)
-                db.flush()
-                db.commit()
-                db.refresh(contest)
-                return contest
-            else:
-                return fastapi.HTTPException(
-                    status_code=200,
-                    detail="Have same contest",
-                )
+        item = (
+            db.query(_models.Contest)
+            .filter(_models.Contest.title == contest.title)
+            .first()
+        )
+
+        if not item:
+            contest = _models.Contest(
+                title=contest.title,
+                category=contest.category,
+                start_time=contest.start_time,
+                end_time=contest.end_time,
+                reward=contest.reward,
+                contest_coins=contest.contest_coins,
+                trading_balance=contest.trading_balance,
+                created_by=payload["id"],
+                updated_by=payload["id"],
+            )
+            db.add(contest)
+            db.flush()
+            db.commit()
+            db.refresh(contest)
+            return contest
         else:
             return fastapi.HTTPException(
                 status_code=200,
@@ -53,17 +44,28 @@ async def create_contest(contest: CreateContest, payload: dict, db: _orm.Session
         return False
 
 
-async def update_contest(contest: CreateContest, payload: dict, db: _orm.Session):
+async def update_contest(contest: UpdateContest, payload: dict, db: _orm.Session):
     try:
         if contest.id == -1:
             return fastapi.HTTPException(
-                status_code=202,
+                status_code=400,
                 detail="Missing id ",
             )
         else:
+            title = (
+                db.query(_models.Contest)
+                .filter(_models.Contest.title == contest.title)
+                .first()
+            )
+
+            if title:
+                return fastapi.HTTPException(
+                    status_code=409,
+                    detail=f"Title exist",
+                )
             _ = (
                 db.query(_models.Contest)
-                .filter(_models.Contest.id == contest.id)
+                .filter(_models.Contest.contest_id == contest.id)
                 .first()
             )
             _.title = contest.title
@@ -71,19 +73,20 @@ async def update_contest(contest: CreateContest, payload: dict, db: _orm.Session
             _.start_time = contest.start_time
             _.end_time = contest.end_time
             _.reward = contest.reward
+            _.status = contest.status
             _.contest_coins = contest.contest_coins
-            _.trading_balance = (contest.trading_balance,)
-            _.updated_at = payload["id"]
-            _.action_owner = contest.action_owner
+            _.trading_balance = contest.trading_balance
+            _.updated_by = payload["id"]
 
-            db.add(_)
-            db.flush()
             db.commit()
-            db.refresh(_, attribute_names=["id"])
-        return _.id
+            db.refresh(_, attribute_names=["contest_id"])
+        return _.contest_id
     except Exception as e:
         print(e)
-        return False
+        return fastapi.HTTPException(
+            status_code=500,
+            detail=f"Server error",
+        )
 
 
 async def delete_contest(payload: dict, id: int, db: _orm.Session):
@@ -92,12 +95,22 @@ async def delete_contest(payload: dict, id: int, db: _orm.Session):
 
     if user.is_admin:
         try:
-            data = db.query(_models.Contest).filter(_models.Contest.contest_id == id).first()
+            data = (
+                db.query(_models.Contest)
+                .filter(_models.Contest.contest_id == id)
+                .first()
+            )
+
             if data:
+                if data.status == "cancelled":
+                    return fastapi.HTTPException(
+                        status_code=409,
+                        detail=f"contest already cancelled",
+                    )
                 data.status = "cancelled"
                 db.commit()
                 db.refresh(data)
-                id = data.id
+                id = data.contest_id
                 return fastapi.HTTPException(
                     status_code=200,
                     detail=f"contest with {id} archived",
@@ -168,20 +181,31 @@ async def exit(id: int, db: _orm.Session):
             .filter(_models.ContestParticipant.id == id)
             .first()
         )
+        if not contest_participant:
+            return fastapi.HTTPException(
+                status_code=200,
+                detail="contest_participant not found ",
+            )
         contest = (
             db.query(_models.Contest)
-            .filter(_models.Contest.contest_id == contest_participant.contest_id)
+            .filter(_models.Contest.contest_id == contest_participant.id)
             .first()
         )
 
         if _dt.date.today() < contest.start_time:
             contest_participant.is_withdrawn = True
-            contest_participant.withdraw_time = _dt.date.now()
+            contest_participant.withdraw_time = _dt.date.today()
             db.add(contest_participant)
             db.commit()
-            return True
+            return fastapi.HTTPException(
+                status_code=200,
+                detail="exited",
+            )
         else:
-            return {"status": "you can't exit "}
+            return fastapi.HTTPException(
+                status_code=200,
+                detail="you can't exit",
+            )
 
     except Exception as e:
         print(e)

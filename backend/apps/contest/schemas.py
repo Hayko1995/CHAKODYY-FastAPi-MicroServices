@@ -12,6 +12,7 @@ class CategoryEnum(str, Enum):
     weekly = "weekly"
     monthly = "monthly"
 
+
 class StatusEnum(str, Enum):
     upcoming = "upcoming"
     active = "active"
@@ -26,7 +27,7 @@ class CreateContest(pydantic.BaseModel):
     reward: str
     contest_coins: str
     trading_balance: str
-    status:  StatusEnum = StatusEnum.upcoming
+    status: StatusEnum = StatusEnum.upcoming
 
     class Config:
         from_attributes = True
@@ -39,6 +40,7 @@ class UpdateContest(pydantic.BaseModel):
     start_time: datetime.date
     end_time: datetime.date
     reward: str
+    status: str
     contest_coins: str
     trading_balance: str
 
