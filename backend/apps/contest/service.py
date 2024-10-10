@@ -12,7 +12,10 @@ async def create_contest(contest: CreateContest, payload: dict, db: _orm.Session
 
         item = (
             db.query(_models.Contest)
-            .filter(_models.Contest.title == contest.title)
+            .filter(
+                _models.Contest.title == contest.title,
+                _models.Contest.status != "cancelled",
+            )
             .first()
         )
 
@@ -35,13 +38,16 @@ async def create_contest(contest: CreateContest, payload: dict, db: _orm.Session
             return contest
         else:
             return fastapi.HTTPException(
-                status_code=200,
-                detail="Today you have contest",
+                status_code=409,
+                detail="contest already exists",
             )
 
     except Exception as e:
         print(e)
-        return False
+        return fastapi.HTTPException(
+            status_code=500,
+            detail="server error",
+        )
 
 
 async def update_contest(contest: UpdateContest, payload: dict, db: _orm.Session):
@@ -181,6 +187,11 @@ async def exit(id: int, db: _orm.Session):
             .filter(_models.ContestParticipant.id == id)
             .first()
         )
+        if contest_participant.is_withdrawn:
+            return fastapi.HTTPException(
+                status_code=409,
+                detail="already exited",
+            )
         if not contest_participant:
             return fastapi.HTTPException(
                 status_code=200,

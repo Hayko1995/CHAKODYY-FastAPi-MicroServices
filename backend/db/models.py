@@ -127,7 +127,7 @@ class Contest(database.Base):
     contest_id = _sql.Column(
         _sql.Integer, primary_key=True, index=True, autoincrement=True
     )
-    title = _sql.Column(_sql.String, unique=True)
+    title = _sql.Column(_sql.String, unique=False)
     category = _sql.Column(_sql.String, unique=False)
     start_time = _sql.Column(Date)
     end_time = _sql.Column(Date)
