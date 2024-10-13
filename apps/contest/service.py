@@ -196,7 +196,6 @@ async def exit(id: int, db: _orm.Session):
             .filter(_models.ContestParticipant.contest_id == id)
             .first()
         )
-        print("🐍 File: contest/service.py | Line: 201 | undefined ~ contest_participant",contest_participant.id)
         if contest_participant.is_withdrawn:
             
             return fastapi.HTTPException(
@@ -219,7 +218,7 @@ async def exit(id: int, db: _orm.Session):
                 detail="contest not found ",
             )
 
-        if _dt.date.today() <= contest.start_time:
+        if _dt.date.today() < contest.start_time:
             contest_participant.is_withdrawn = True
             contest_participant.withdraw_time = _dt.date.today()
             db.add(contest_participant)

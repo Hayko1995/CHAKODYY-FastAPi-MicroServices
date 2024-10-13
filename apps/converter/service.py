@@ -18,7 +18,7 @@ class ConvertService:
     def __init__(self, repository: ConvertRepository) -> None:
         self.repository = repository
 
-    def limit_buy(self, req_body: Market, payload, db: _orm.Session):
+    def limit(self, req_body: Market, payload, db: _orm.Session):
         from_coin = req_body.from_coin.upper()
         to_coin = req_body.to_coin.upper()
 
@@ -32,7 +32,7 @@ class ConvertService:
             if to_coin == None:
                 return {"status": "not found to  coin "}
 
-            if float(to_coin.count) <= float(req_body.count) * float(req_body.price):
+            if float(to_coin.count) < float(req_body.count):
                 return {"status": "not  enugth coins"}
 
             contest_id = (
@@ -41,10 +41,14 @@ class ConvertService:
                 .first()
                 .contest_id
             )
+            if req_body.buy:
+                order_direction = "buy"
+            else:
+                order_direction = "sell"
 
             order = models.OrderPending(
                 order_type="limit",
-                order_direction="buy",
+                order_direction=order_direction,
                 from_coin=req_body.from_coin,
                 to_coin=req_body.to_coin,
                 order_quantity=req_body.count,
@@ -62,62 +66,39 @@ class ConvertService:
                 "status": "unsuccess",
             }
 
-    def limit_sell(self, req_body: Market, payload, db: _orm.Session):
-        from_coin = req_body.from_coin.upper()
-        to_coin = req_body.to_coin.upper()
-
+    def get_coin(self, id, coin, db) -> models.Balance:
         try:
-
-            from_coin = self.repository.get_coin(payload["id"], from_coin, db=db)
-            if from_coin == None:
-                return {"status": "not found  from coin "}
-
-            to_coin = self.repository.get_coin(payload["id"], to_coin, db=db)
-
-            if to_coin == None:
-                return {"status": "not  found to coin "}
-
-            if float(to_coin.count) <= float(req_body.count) * float(req_body.price):
-                return {"status": "not enugth coins "}
-
-            to_coin.count = float(
-                float(to_coin.count) + float(req_body.count) * float(req_body.price)
-            )
-            from_coin.count = from_coin.count - req_body.count
-            contest_id = (
-                db.query(models.ContestParticipant)
-                .filter(models.ContestParticipant.participant == payload["id"])
+            coin_row = (
+                db.query(models.Balance)
+                .filter(
+                    models.Balance.user_id == id,
+                    models.Balance.name == coin,
+                )
                 .first()
-                .contest_id
             )
+            if not coin_row:
+                if coin == "USDT":
+                    coin_row = models.Balance(
+                        name="USDT",
+                        count=0,
+                        user_id=id,
+                    )
+                    db.add(coin_row)
+                    db.commit()
+                    db.refresh(coin_row)
 
-            order = models.OrderPending(
-                order_type="limit",
-                order_direction="cell",
-                from_coin=req_body.from_coin,
-                to_coin=req_body.to_coin,
-                order_quantity=req_body.count,
-                price=req_body.price,
-                order_status=True,
-                user_id=payload["id"],
-                contest_id=contest_id,
-            )
-            db.add(order)
-            db.commit()
-            return req_body
+            return coin_row
         except Exception as e:
             print(e)
-            return {
-                "status": "unsuccess",
-            }
+            return {"status": "server error"}
 
-    def market_buy(self, req_body: Market, id, db: _orm.Session):
-        print("................................buy.....")
+    def market(self, req_body: Market, id, db: _orm.Session):
+        print(
+            "..................................." + " Market.buy = " + str(req_body.buy)
+        )
         from_coin = req_body.from_coin.upper()
         to_coin = req_body.to_coin.upper()
-
         try:
-
             from_coin = self.repository.get_coin(id, from_coin, db=db)
 
             if from_coin == None:
@@ -127,13 +108,14 @@ class ConvertService:
 
             if to_coin == None:
                 return {"status": "not found to coin "}
-
-            if float(to_coin.count) <= float(req_body.count) * float(req_body.price):
-                return {"status": "not enugth coins"}
+        
+            if float(from_coin.count) < float(req_body.count):
+                return {"status": "not enough coins"}
 
             to_coin.count = float(
                 float(to_coin.count) + float(req_body.count) * float(req_body.price)
             )
+            to_coin.count = round(to_coin.count, 5)
             from_coin.count = float(from_coin.count) - float(req_body.count)
             contest = (
                 db.query(models.ContestParticipant)
@@ -142,10 +124,14 @@ class ConvertService:
             )
             if contest:
                 contest_id = contest.contest_id
+                if req_body.buy:
+                    order_direction = "buy"
+                else:
+                    order_direction = "sell"
 
                 order = models.OrderArchived(
                     order_type="market",
-                    order_direction="buy",
+                    order_direction=order_direction,
                     from_coin=req_body.from_coin,
                     to_coin=req_body.to_coin,
                     order_quantity=req_body.count,
@@ -166,7 +152,7 @@ class ConvertService:
                 "status": "unsuccess",
             }
 
-    def market_sell(self, req_body: Market, id, db):
+        # def market_sell(self, req_body: Market, id, db):
         from_coin = req_body.from_coin.upper()
         to_coin = req_body.to_coin.upper()
 
@@ -180,12 +166,10 @@ class ConvertService:
             if to_coin == None:
                 return {"status": "not found to coin "}
 
-            if float(to_coin.count) <= float(req_body.count) * 1 / float(
-                req_body.price
-            ):
-                return {"status": "not enugth coins"}
+            if float(from_coin.count) < float(req_body.count):
+                return {"status": "not enough coins"}
 
-            to_coin.count = float(to_coin.count) + float(req_body.count) *  float(
+            to_coin.count = float(to_coin.count) + float(req_body.count) * float(
                 req_body.price
             )
             from_coin.count = float(from_coin.count) - float(req_body.count)

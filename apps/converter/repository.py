@@ -14,7 +14,7 @@ class ConvertRepository:
 
     def get_coin(self, id, coin, db) -> models.Balance:
         try:
-            coin = (
+            coin_row = (
                 db.query(models.Balance)
                 .filter(
                     models.Balance.user_id == id,
@@ -22,10 +22,21 @@ class ConvertRepository:
                 )
                 .first()
             )
-            return coin
+            if not coin_row:
+                if coin == "USDT":
+                    coin_row = models.Balance(
+                        name="USDT",
+                        count=0,
+                        user_id=id,
+                    )
+                    db.add(coin_row)
+                    db.commit()
+                    db.refresh(coin_row)
+
+            return coin_row
         except Exception as e:
             print(e)
-            raise NotImplemented
+            return {"status": "server error"}
 
 
 class RedisRepository:

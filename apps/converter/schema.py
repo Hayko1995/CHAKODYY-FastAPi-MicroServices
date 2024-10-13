@@ -19,6 +19,7 @@ class Book(BaseModel):
 
 
 class Market(BaseModel):
+    buy: bool= True
     from_coin: str
     to_coin: str
     price: float

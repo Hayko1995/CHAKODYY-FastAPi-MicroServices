@@ -15,7 +15,7 @@ def connect_to_redis():
 
 redis_service = RedisService(redis_repository, connect_to_redis())
 
-convert_service = ConvertService(convert_repository)
+
 
 
 def get_redis_service() -> RedisService:
@@ -23,4 +23,5 @@ def get_redis_service() -> RedisService:
 
 
 def get_convert_service() -> ConvertService:
+    convert_service = ConvertService(convert_repository)
     return convert_service

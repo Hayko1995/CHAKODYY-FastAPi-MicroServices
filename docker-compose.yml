@@ -13,14 +13,14 @@ services:
   backend:
     restart: always
     build:
-      context: ./backend
+      context: .
     container_name: backend
     # command: ["tail", "-f", "/dev/null"]
     command: sh -c "python app.py"
     env_file:
       - .env
     volumes:
-      - ./backend:/backend
+      - .:/backend
     ports:
       - "5003:5003"
     depends_on:

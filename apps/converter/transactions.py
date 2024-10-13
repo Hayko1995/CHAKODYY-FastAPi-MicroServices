@@ -15,7 +15,6 @@ from ast import literal_eval
 from dotenv import load_dotenv
 from fastapi import Depends
 
-from apps.converter.router import market_buy_coin, market_sell_coin
 from apps.converter.schema import Market
 
 # Load environment variables from .env file
@@ -54,12 +53,13 @@ class Transaction(ABC):
 
                         self.delete_rows_from_redis(coin, row)
                         market = Market(
+                            buy=True,
                             from_coin=row["from_coin"],
                             to_coin=row["to_coin"],
                             price=row["price"],
                             count=row["order_quantity"],
                         )
-                        res = service.market_buy(
+                        res = service.market(
                             market, id=row["user_id"], db=database.SessionLocal()
                         )
 
@@ -68,14 +68,13 @@ class Transaction(ABC):
                     if float(row["price"]) > float(ticker["c"]):
                         self.delete_row(order_id=row.order_id)
                         market = Market(
+                            buy=False,
                             from_coin=row["from_coin"],
                             to_coin=row["to_coin"],
                             price=row["price"],
                             count=row["order_quantity"],
                         )
-                        res = service.market_sell(
-                            market, id=id, db=database.SessionLocal()
-                        )
+                        res = service.market(market, id=id, db=database.SessionLocal())
                         print(res)
 
     async def binance_ws(self):

@@ -22,7 +22,7 @@ router = APIRouter(prefix="/api", tags=["converter"])
 
 
 @router.post("/get_buy_history", status_code=200)
-async def buy_coin(
+async def get_coins(
     db: _orm.Session = Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
@@ -78,7 +78,7 @@ async def delete_buys(
 
 
 @router.post("/buy", status_code=200)
-async def buy_coin(
+async def get_coins(
     req_body: ReqBody,
     payload: dict = fastapi.Depends(jwt_validation),
     db: _orm.Session = Depends(database.get_db),
@@ -126,42 +126,20 @@ async def buy_coin(
         raise HTTPException(status_code=500, detail="some problem in code ")
 
 
-@router.post("/market_buy", status_code=200)
-def market_buy_coin(
+@router.post("/market", status_code=200)
+def market_coin(
     req_body: Market,
     db: _orm.Session = Depends(database.get_db),
     service: ConvertService = Depends(get_convert_service),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
-    try:
-        return service.market_buy(req_body, payload["id"], db=db)
+    
+    return service.market(req_body, payload["id"], db=db)
 
-    except Exception as e:
-        print(e)
-        return {
-            "status": "unsuccess",
-        }
-
-
-@router.post("/market_sell", status_code=200)
-def market_sell_coin(
-    req_body: Market,
-    db: _orm.Session = Depends(database.get_db),
-    service: ConvertService = Depends(get_convert_service),
-    payload: dict = fastapi.Depends(jwt_validation),
-):
-    try:
-        return service.market_sell(req_body, payload["id"], db=db)
-
-    except Exception as e:
-        print(e)
-        return {
-            "status": "unsuccess",
-        }
-
+    
 
 @router.post("/get_coins", status_code=200)
-async def buy_coin(
+async def get_coins(
     db: _orm.Session = Depends(database.get_db),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
@@ -182,7 +160,6 @@ async def buy_coin(
     return {"status": "success", "coins": coins}
 
 
-
 @router.get("/balance", responses={400: {"description": "Bad request"}})
 async def get_balance(
     db: _orm.Session = Depends(database.get_db),
@@ -192,29 +169,20 @@ async def get_balance(
 
 
 @router.post(
-    "/limit_buy",
+    "/limit",
     responses={400: {"description": "Bad request"}},
 )
-def limit_buy(
+def limit(
     request: Market,
     service: RedisService = Depends(get_redis_service),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
-    service.set_value(request, "buy", payload)
-    return {"status": "sucess"}
-
-
-@router.post(
-    "/limit_sell",
-    responses={400: {"description": "Bad request"}},
-)
-def limit_sell(
-    request: Market,
-    service: RedisService = Depends(get_redis_service),
-    payload: dict = fastapi.Depends(jwt_validation),
-):
-    service.set_value(request, "cell", payload)
-    return {"status": "sucess"}
+    if request.buy:
+        transaction_type = "buy"
+    else:
+        transaction_type = "sell"
+    service.set_value(request, transaction_type, payload)
+    return {"status": "success"}
 
 
 @router.get(
