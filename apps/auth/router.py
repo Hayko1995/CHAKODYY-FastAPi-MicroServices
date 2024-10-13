@@ -32,7 +32,9 @@ async def jwt_validation(token: str = fastapi.Depends(oauth2_scheme)):
         payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
         return payload
     except UnicodeError:
-        raise HTTPException(status_code=401, detail="Invalid JWT token")
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED, content="Invalid JWT token"
+        )
 
 
 @auth.post("/api/users")
@@ -53,6 +55,19 @@ async def create_user(
     return JSONResponse(status_code=status.HTTP_201_CREATED, content=data)
 
 
+@auth.put("/api/users")
+async def update_user(
+    update_data: schemas.UpdateUser,
+    db: orm.Session = fastapi.Depends(database.get_db),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
+
+    user = await _services.update_user(update_data, id=payload["id"], db=db)
+
+    data = {"message": "Updated "}
+    return JSONResponse(status_code=status.HTTP_200_OK, content=data)
+
+
 @auth.post("/api/super_users")
 async def create_user(
     user: schemas.UserCreate, db: orm.Session = fastapi.Depends(database.get_db)
@@ -67,10 +82,9 @@ async def create_user(
         )
 
     user = await _services.create_super_user(user=user, db=db)
-
-    return fastapi.HTTPException(
-        status_code=201,
-        detail="User Registered, Please verify email to activate account !",
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED,
+        content="User Registered, Please verify email to activate account !",
     )
 
 
@@ -81,16 +95,19 @@ async def delete_user(
 ):
     await _services.delete_user_by_id(id=payload["id"], db=db)
 
-    return fastapi.HTTPException(
-        status_code=200,
-        detail="User Registered, Please verify email to activate account !",
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content="User Deleted",
     )
 
 
 # Endpoint to check if the API is live
 @auth.get("/check_api")
 async def check_api():
-    return {"status": "Connected to API Successfully"}
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content="Connected to API Successfully",
+    )
 
 
 @auth.post("/token")  # marge with "/api/token"
@@ -117,9 +134,10 @@ async def swagger_login(
         logging.info(
             "Email verification is pending. Please verify your email to proceed. "
         )
-        raise fastapi.HTTPException(
-            status_code=403,
-            detail="Email verification is pending. Please verify your email to proceed.",
+
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content="Email verification is pending. Please verify your email to proceed.",
         )
 
     if not user:
@@ -156,7 +174,9 @@ async def generate_token(
         logging.info(
             "Email verification is pending. Please verify your email to proceed. "
         )
-        data = {"message": "Email verification is pending. Please verify your email to proceed."}
+        data = {
+            "message": "Email verification is pending. Please verify your email to proceed."
+        }
         return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content=data)
 
     if not user:
@@ -231,7 +251,9 @@ async def verify_otp(
 
     otp_expiration_minutes = float(os.environ.get("OTP_EXPIRATION_TIME_MINUTES"))
     if total_time_difference > otp_expiration_minutes:
-        data = {"message": "The OTP has been expired. Generate a new OTP and try again."}
+        data = {
+            "message": "The OTP has been expired. Generate a new OTP and try again."
+        }
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=data)
 
     # Update user's is_verified field
@@ -293,7 +315,9 @@ async def reset_password(
 
     otp_expiration_minutes = float(os.environ.get("OTP_EXPIRATION_TIME_MINUTES"))
     if total_time_difference > otp_expiration_minutes:
-        data = {"message": "The OTP has been expired. Generate a new OTP and try again."}
+        data = {
+            "message": "The OTP has been expired. Generate a new OTP and try again."
+        }
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=data)
 
     if userdata.new_password != userdata.repeat_password:

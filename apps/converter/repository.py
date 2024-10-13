@@ -1,7 +1,10 @@
 from typing import List
 
+from fastapi.responses import JSONResponse
+
 
 from db import models
+from fastapi import status
 
 
 class ConvertRepository:
@@ -36,7 +39,8 @@ class ConvertRepository:
             return coin_row
         except Exception as e:
             print(e)
-            return {"status": "server error"}
+            return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
 
 
 class RedisRepository:

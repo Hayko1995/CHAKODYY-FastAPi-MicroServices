@@ -1,4 +1,5 @@
 import datetime
+from typing import Optional
 import pydantic
 
 
@@ -13,9 +14,39 @@ class UserBase(pydantic.BaseModel):
 class UserCreate(UserBase):
     username: str
     password: str
-
+    address: Optional[str]
+    street: Optional[str]
+    state: Optional[str]
+    city: Optional[str]
+    country: Optional[str]
+    pincode: Optional[str]
+    nationality: Optional[str]
+    preference_timezone: Optional[str]
+    preference_language: Optional[str]
+    preference_login_method: Optional[str]
+    phone_number: Optional[str]
+        
     class Config:
         from_attributes = True
+
+class UpdateUser(pydantic.BaseModel):
+    address: Optional[str]
+    street: Optional[str]
+    state: Optional[str]
+    city: Optional[str]
+    country: Optional[str]
+    pincode: Optional[str]
+    nationality: Optional[str]
+    preference_timezone: Optional[str]
+    preference_language: Optional[str]
+    preference_login_method: Optional[str]
+    phone_number: Optional[str]
+        
+    class Config:
+        from_attributes = True
+
+
+
 
 class User(UserBase):
     id: int

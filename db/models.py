@@ -22,7 +22,8 @@ from sqlalchemy.sql import func
 
 Base.metadata.create_all(engine)
 
-local_tz = pytz.timezone('Asia/Dubai')
+local_tz = pytz.timezone("Asia/Dubai")
+
 
 def get_local_time():
     return _dt.datetime.now(local_tz)
@@ -39,6 +40,16 @@ class User(database.Base):
     otp = _sql.Column(_sql.Integer)
     otp_created_at = _sql.Column(_sql.DateTime, default=get_local_time())
     hashed_password = _sql.Column(_sql.String)
+    address = _sql.Column(_sql.String, default="")
+    street = _sql.Column(_sql.String, default="")
+    state = _sql.Column(_sql.String, default="")
+    city = _sql.Column(_sql.String, default="")
+    country = _sql.Column(_sql.String, default="")
+    pincode = _sql.Column(_sql.String, default="")
+    nationality = _sql.Column(_sql.String, default="")
+    preference_timezone = _sql.Column(_sql.String, default="")
+    preference_language = _sql.Column(_sql.String, default="")
+    preference_login_method = _sql.Column(_sql.String, default="")
     created_at = _sql.Column(_sql.DateTime, default=get_local_time())
     updated_at = _sql.Column(
         _sql.TIMESTAMP, server_default=func.now(), onupdate=func.current_timestamp()

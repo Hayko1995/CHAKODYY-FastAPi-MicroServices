@@ -1,10 +1,12 @@
 import fastapi
+from fastapi.responses import JSONResponse
 import sqlalchemy.orm as _orm
 from apps.notification.email_service import notification
 from apps.contest.schemas import CreateContest, UpdateContest
 from apps.auth.service import get_user_by_id
 import db.models as _models
 import datetime as _dt
+from fastapi import status
 
 
 async def create_contest(contest: CreateContest, payload: dict, db: _orm.Session):
@@ -197,15 +199,15 @@ async def exit(id: int, db: _orm.Session):
             .first()
         )
         if contest_participant.is_withdrawn:
-            
-            return fastapi.HTTPException(
-                status_code=409,
-                detail="already exited",
+
+            return JSONResponse(
+                status_code=status.HTTP_409_CONFLICT,
+                content="already exited",
             )
         if not contest_participant:
-            return fastapi.HTTPException(
-                status_code=200,
-                detail="contest_participant not found ",
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content="contest_participant not fount",
             )
         contest = (
             db.query(_models.Contest)
@@ -213,9 +215,9 @@ async def exit(id: int, db: _orm.Session):
             .first()
         )
         if not contest:
-            return fastapi.HTTPException(
-                status_code=200,
-                detail="contest not found ",
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content="contest not fount",
             )
 
         if _dt.date.today() < contest.start_time:
@@ -228,17 +230,14 @@ async def exit(id: int, db: _orm.Session):
                 detail="exited",
             )
         else:
-            return fastapi.HTTPException(
-                status_code=200,
-                detail="you can't exit",
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content="you can't exit",
             )
 
     except Exception as e:
         print(e)
-        return fastapi.HTTPException(
-            status_code=500,
-            detail="Server side error ",
-        )
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 async def delete_participant(id: int, db: _orm.Session):
@@ -252,4 +251,4 @@ async def delete_participant(id: int, db: _orm.Session):
 
     except Exception as e:
         print(e)
-        return {"status": "Server Error"}
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)

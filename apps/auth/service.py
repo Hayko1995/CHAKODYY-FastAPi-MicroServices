@@ -75,6 +75,42 @@ async def create_user(user: _schemas.UserCreate, db: _orm.Session):
     return user_obj
 
 
+async def update_user(update_data: _schemas.UpdateUser, id: int, db: _orm.Session):
+
+    try:
+        user = await get_user_by_id(id=id, db=db)
+        user.address = update_data.address
+        user.street = update_data.street
+        user.state = update_data.state
+        user.city = update_data.city
+        user.country = update_data.country
+        user.pincode = update_data.pincode
+        user.nationality = update_data.nationality
+        user.preference_timezone = update_data.preference_timezone
+        user.preference_language = update_data.preference_language
+        user.preference_login_method = update_data.preference_login_method
+
+        db.commit()
+        db.refresh(user)
+        return user
+
+    except _email_check.EmailNotValidError:
+        raise _fastapi.HTTPException(
+            status_code=404, detail="Please enter a valid email"
+        )
+
+    user_obj = _models.User(
+        email=email,
+        username=username,
+        name=name,
+        hashed_password=pbkdf2_sha256.hash(user.password),
+    )
+    db.add(user_obj)
+    db.commit()
+    db.refresh(user_obj)
+    return user_obj
+
+
 async def create_super_user(user: _schemas.UserCreate, db: _orm.Session):
     # Create a new user in the database
     try:
