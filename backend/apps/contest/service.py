@@ -159,6 +159,15 @@ async def join(user_id: int, id: int, db: _orm.Session):
         if _dt.date.today() < contest.end_time:
 
             if await get_user_by_id(user_id, db) != None:
+                if (
+                    db.query(_models.ContestParticipant)
+                    .filter(
+                        _models.ContestParticipant.contest_id == id,
+                        _models.ContestParticipant.participant == user_id,
+                    )
+                    .first()
+                ):
+                    return {"result": "already entered"}
                 try:
                     contest_participant = _models.ContestParticipant(
                         contest_id=id,
@@ -184,10 +193,12 @@ async def exit(id: int, db: _orm.Session):
     try:
         contest_participant = (
             db.query(_models.ContestParticipant)
-            .filter(_models.ContestParticipant.id == id)
+            .filter(_models.ContestParticipant.contest_id == id)
             .first()
         )
+        print("🐍 File: contest/service.py | Line: 201 | undefined ~ contest_participant",contest_participant.id)
         if contest_participant.is_withdrawn:
+            
             return fastapi.HTTPException(
                 status_code=409,
                 detail="already exited",
@@ -202,8 +213,13 @@ async def exit(id: int, db: _orm.Session):
             .filter(_models.Contest.contest_id == contest_participant.id)
             .first()
         )
+        if not contest:
+            return fastapi.HTTPException(
+                status_code=200,
+                detail="contest not found ",
+            )
 
-        if _dt.date.today() < contest.start_time:
+        if _dt.date.today() <= contest.start_time:
             contest_participant.is_withdrawn = True
             contest_participant.withdraw_time = _dt.date.today()
             db.add(contest_participant)
