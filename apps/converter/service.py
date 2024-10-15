@@ -32,6 +32,12 @@ class ConvertService:
                 .first()
             ):
                 coin1, coin2 = coin2, coin1
+                if (
+                    not db.query(models.CoinSet)
+                    .filter(models.CoinSet.sell_pair == coin1 + coin2)
+                    .first()
+                ):
+                    return {"status": "you don't have coinSet"}
 
         else:
             if (
@@ -40,6 +46,12 @@ class ConvertService:
                 .first()
             ):
                 coin1, coin2 = coin2, coin1
+                if (
+                    not db.query(models.CoinSet)
+                    .filter(models.CoinSet.buy_pair == coin1 + coin2)
+                    .first()
+                ):
+                    return {"status": "you don't have coinSet"}
 
         try:
             from_coin = self.repository.get_coin(payload["id"], from_coin, db=db)
@@ -124,6 +136,12 @@ class ConvertService:
                     .first()
                 ):
                     coin1, coin2 = coin2, coin1
+                    if (
+                        not db.query(models.CoinSet)
+                        .filter(models.CoinSet.sell_pair == coin1 + coin2)
+                        .first()
+                    ):
+                        return {"status": "you do not have coinSet"}
 
             else:
                 if (
@@ -132,6 +150,12 @@ class ConvertService:
                     .first()
                 ):
                     coin1, coin2 = coin2, coin1
+                    if (
+                        not db.query(models.CoinSet)
+                        .filter(models.CoinSet.buy_pair == coin1 + coin2)
+                        .first()
+                    ):
+                        return {"status": "you do not have coinSet"}
 
             coin1 = self.repository.get_coin(id, coin1, db=db)
 
