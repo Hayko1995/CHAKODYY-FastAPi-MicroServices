@@ -218,3 +218,13 @@ class OrderPending(database.Base):
 
     class Config:
         orm_mode = True
+
+
+class CoinSet(database.Base):
+    __tablename__ = "coinset"
+
+    id = _sql.Column(
+        _sql.Integer, primary_key=True, index=True, autoincrement=True
+    )
+    buy_pair = _sql.Column(_sql.String, nullable=False)
+    sell_pair = _sql.Column(_sql.String, nullable=False)

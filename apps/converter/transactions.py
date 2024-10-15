@@ -54,8 +54,8 @@ class Transaction(ABC):
                         self.delete_rows_from_redis(coin, row)
                         market = Market(
                             buy=True,
-                            from_coin=row["from_coin"],
-                            to_coin=row["to_coin"],
+                            coin1=row["from_coin"],
+                            coin2=row["to_coin"],
                             price=row["price"],
                             count=row["order_quantity"],
                         )
@@ -69,8 +69,8 @@ class Transaction(ABC):
                         self.delete_row(order_id=row.order_id)
                         market = Market(
                             buy=False,
-                            from_coin=row["from_coin"],
-                            to_coin=row["to_coin"],
+                            coin1=row["from_coin"],
+                            coin2=row["to_coin"],
                             price=row["price"],
                             count=row["order_quantity"],
                         )

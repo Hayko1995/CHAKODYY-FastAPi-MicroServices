@@ -11,8 +11,10 @@ from urllib import response
 from apps.auth.router import jwt_validation
 from apps.converter import service
 from apps.converter.schema import (
+    CoinSet,
     Market,
     ReqBody,
+    UpdateCoinSet,
 )
 from apps.converter.service import ConvertService, RedisService
 from depends import get_convert_service, get_redis_service
@@ -133,10 +135,9 @@ def market_coin(
     service: ConvertService = Depends(get_convert_service),
     payload: dict = fastapi.Depends(jwt_validation),
 ):
-    
+
     return service.market(req_body, payload["id"], db=db)
 
-    
 
 @router.post("/get_coins", status_code=200)
 async def get_coins(
@@ -194,3 +195,50 @@ def get_panding(
     payload: dict = fastapi.Depends(jwt_validation),
 ):
     return service.get_all(payload)
+
+
+@router.get(
+    "/coinset",
+    responses={400: {"description": "Bad request"}},
+)
+async def get_coinset(
+    db: _orm.Session = Depends(database.get_db),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
+    return await service.get_coinSet(db)
+
+
+@router.post(
+    "/coinset",
+    responses={400: {"description": "Bad request"}},
+)
+async def add_coinSet(
+    req_body: CoinSet,
+    db: _orm.Session = Depends(database.get_db),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
+    return await service.add_coinSet(req_body, db)
+
+
+@router.delete(
+    "/coinset",
+    responses={400: {"description": "Bad request"}},
+)
+async def delete_coinset(
+    id: int,
+    db: _orm.Session = Depends(database.get_db),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
+    return await service.delete_coinSet(id, db)
+
+
+@router.put(
+    "/coinset",
+    responses={400: {"description": "Bad request"}},
+)
+async def update_coinset(
+    req_body: UpdateCoinSet,
+    db: _orm.Session = Depends(database.get_db),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
+    return await service.update_coinSet(req_body, db)

@@ -19,12 +19,21 @@ class Book(BaseModel):
 
 
 class Market(BaseModel):
-    buy: bool= True
-    from_coin: str
-    to_coin: str
+    buy: bool = True
+    coin1: str
+    coin2: str
     price: float
     count: float
 
+
+class CoinSet(BaseModel):
+    coin1: str
+    coin2: str
+
+class UpdateCoinSet(BaseModel):
+    id: int
+    coin1: str
+    coin2: str
 
 class ConvertRequest(BaseModel):
     from_coin: str

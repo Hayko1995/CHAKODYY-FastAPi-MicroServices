@@ -1,6 +1,7 @@
 import json
 
 from fastapi import HTTPException
+from fastapi.responses import JSONResponse
 
 from apps.converter.repository import ConvertRepository, RedisRepository
 import asyncio_redis
@@ -10,8 +11,9 @@ from typing import List
 
 from apps.auth.service import get_user_by_id
 from apps.converter.repository import ConvertRepository, RedisRepository
-from apps.converter.schema import BuyCoin, Market
+from apps.converter.schema import BuyCoin, CoinSet, Market, UpdateCoinSet
 from db import models
+from fastapi import BackgroundTasks, Depends, HTTPException, security, status
 
 
 class ConvertService:
@@ -19,8 +21,25 @@ class ConvertService:
         self.repository = repository
 
     def limit(self, req_body: Market, payload, db: _orm.Session):
-        from_coin = req_body.from_coin.upper()
-        to_coin = req_body.to_coin.upper()
+        from_coin = req_body.coin1.upper()
+        to_coin = req_body.coin2.upper()
+
+        if req_body.buy:
+
+            if (
+                not db.query(models.CoinSet)
+                .filter(models.CoinSet.buy_pair == coin1 + coin2)
+                .first()
+            ):
+                coin1, coin2 = coin2, coin1
+
+        else:
+            if (
+                not db.query(models.CoinSet)
+                .filter(models.CoinSet.sell_pair == coin1 + coin2)
+                .first()
+            ):
+                coin1, coin2 = coin2, coin1
 
         try:
             from_coin = self.repository.get_coin(payload["id"], from_coin, db=db)
@@ -49,8 +68,8 @@ class ConvertService:
             order = models.OrderPending(
                 order_type="limit",
                 order_direction=order_direction,
-                from_coin=req_body.from_coin,
-                to_coin=req_body.to_coin,
+                from_coin=req_body.coin1,
+                to_coin=req_body.coin2,
                 order_quantity=req_body.count,
                 price=req_body.price,
                 order_status=True,
@@ -93,30 +112,45 @@ class ConvertService:
             return {"status": "server error"}
 
     def market(self, req_body: Market, id, db: _orm.Session):
-        print(
-            "..................................." + " Market.buy = " + str(req_body.buy)
-        )
-        from_coin = req_body.from_coin.upper()
-        to_coin = req_body.to_coin.upper()
         try:
-            from_coin = self.repository.get_coin(id, from_coin, db=db)
+            coin1 = req_body.coin1.upper()
+            coin2 = req_body.coin2.upper()
 
-            if from_coin == None:
+            if req_body.buy:
+                coin1 + coin2
+                if (
+                    not db.query(models.CoinSet)
+                    .filter(models.CoinSet.buy_pair == coin1 + coin2)
+                    .first()
+                ):
+                    coin1, coin2 = coin2, coin1
+
+            else:
+                if (
+                    not db.query(models.CoinSet)
+                    .filter(models.CoinSet.sell_pair == coin1 + coin2)
+                    .first()
+                ):
+                    coin1, coin2 = coin2, coin1
+
+            coin1 = self.repository.get_coin(id, coin1, db=db)
+
+            if coin1 == None:
                 return {"status": "not found from coin "}
 
-            to_coin = self.repository.get_coin(id, to_coin, db=db)
+            coin2 = self.repository.get_coin(id, coin2, db=db)
 
-            if to_coin == None:
+            if coin2 == None:
                 return {"status": "not found to coin "}
-        
-            if float(from_coin.count) < float(req_body.count):
+
+            if float(coin1.count) < float(req_body.count):
                 return {"status": "not enough coins"}
 
-            to_coin.count = float(
-                float(to_coin.count) + float(req_body.count) * float(req_body.price)
+            coin2.count = float(
+                float(coin2.count) + float(req_body.count) * float(req_body.price)
             )
-            to_coin.count = round(to_coin.count, 5)
-            from_coin.count = float(from_coin.count) - float(req_body.count)
+            coin2.count = round(coin2.count, 5)
+            coin1.count = float(coin1.count) - float(req_body.count)
             contest = (
                 db.query(models.ContestParticipant)
                 .filter(models.ContestParticipant.participant == id)
@@ -132,8 +166,8 @@ class ConvertService:
                 order = models.OrderArchived(
                     order_type="market",
                     order_direction=order_direction,
-                    from_coin=req_body.from_coin,
-                    to_coin=req_body.to_coin,
+                    from_coin=req_body.coin1,
+                    to_coin=req_body.coin2,
                     order_quantity=req_body.count,
                     price=req_body.price,
                     order_status=True,
@@ -152,58 +186,70 @@ class ConvertService:
                 "status": "unsuccess",
             }
 
-        # def market_sell(self, req_body: Market, id, db):
-        from_coin = req_body.from_coin.upper()
-        to_coin = req_body.to_coin.upper()
-
-        try:
-            from_coin = self.repository.get_coin(id, from_coin, db=db)
-            if from_coin == None:
-                return {"status": "not found from coin "}
-
-            to_coin = self.repository.get_coin(id, to_coin, db=db)
-
-            if to_coin == None:
-                return {"status": "not found to coin "}
-
-            if float(from_coin.count) < float(req_body.count):
-                return {"status": "not enough coins"}
-
-            to_coin.count = float(to_coin.count) + float(req_body.count) * float(
-                req_body.price
-            )
-            from_coin.count = float(from_coin.count) - float(req_body.count)
-
-            contest_id = (
-                db.query(models.ContestParticipant)
-                .filter(models.ContestParticipant.participant == id)
-                .first()
-                .contest_id
-            )
-
-            order = models.OrderArchived(
-                order_type="market",
-                order_direction="sell",
-                from_coin=req_body.from_coin,
-                to_coin=req_body.to_coin,
-                order_quantity=req_body.count,
-                price=req_body.price,
-                order_status=True,
-                user_id=id,
-                contest_id=contest_id,
-            )
-            db.add(order)
-            db.commit()
-            return req_body
-        except Exception as e:
-            print(e)
-            return {
-                "status": "unsuccess",
-            }
-
     async def buy_coin(self, coin_uuid, coin_name, coin_count) -> BuyCoin:
         result = await self.repository.buy_coin(coin_uuid, coin_name, coin_count)
         return result
+
+
+async def get_coinSet(db: _orm.Session):
+    try:
+        return db.query(models.CoinSet).all()
+    except Exception as e:
+        print(e)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content="Server Error"
+    )
+
+
+async def add_coinSet(req_body: CoinSet, db: _orm.Session):
+    try:
+        req_body.coin1 = req_body.coin1.upper()
+        req_body.coin2 = req_body.coin2.upper()
+
+        coin = models.CoinSet(
+            buy_pair=req_body.coin1 + req_body.coin2,
+            sell_pair=req_body.coin2 + req_body.coin1,
+        )
+        db.add(coin)
+        db.commit()
+        db.refresh(coin)
+        return coin
+    except Exception as e:
+        print(e)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content="Server Error"
+    )
+
+
+async def update_coinSet(req_body: UpdateCoinSet, db: _orm.Session):
+    try:
+        req_body.coin1 = req_body.coin1.upper()
+        req_body.coin2 = req_body.coin2.upper()
+        coin = db.query(models.CoinSet).filter(models.CoinSet.id == req_body.id).first()
+        coin.buy_pair = req_body.coin1 + req_body.coin2
+        coin.sell_pair = req_body.coin2 + req_body.coin1
+        db.commit()
+        db.refresh(coin)
+        return coin
+    except Exception as e:
+        print(e)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content="Server Error"
+    )
+
+
+async def delete_coinSet(id: int, db: _orm.Session):
+    try:
+        db.query(models.CoinSet).filter(models.CoinSet.id == id).delete()
+
+        db.commit()
+
+        return JSONResponse(status_code=status.HTTP_200_OK, content="done")
+    except Exception as e:
+        print(e)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content="Server Error"
+    )
 
 
 async def get_balance(id, db: _orm.Session):
@@ -240,10 +286,10 @@ class RedisService:
 
     def set_value(self, request: Market, buy: str, payload: dict) -> None:
         connection = self.connection
-        coin_set = request.from_coin + request.to_coin
+        coin_set = request.coin1 + request.coin2
         limit = {}
         limit["user_id"] = payload["id"]
-        limit["coin_set"] = request.from_coin + request.to_coin
+        limit["coin_set"] = request.coin1 + request.coin2
         limit["price"] = float(request.price)
         limit["count"] = request.count
         limit["order_direction"] = buy
@@ -252,9 +298,9 @@ class RedisService:
             "price": float(request.price),
             "user_id": payload["id"],
             "order_direction": buy,
-            "coin_set": request.from_coin + request.to_coin,
-            "from_coin": request.from_coin,
-            "to_coin": request.to_coin,
+            "coin_set": request.coin1 + request.coin2,
+            "from_coin": request.coin1,
+            "to_coin": request.coin2,
             "order_quantity": request.count,
         }
         redis_value = connection.get(coin_set)
