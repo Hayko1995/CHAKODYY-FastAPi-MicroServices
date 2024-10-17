@@ -129,7 +129,6 @@ class ConvertService:
             coin2 = req_body.coin2.upper()
 
             if req_body.buy:
-                coin1 + coin2
                 if (
                     not db.query(models.CoinSet)
                     .filter(models.CoinSet.buy_pair == coin1 + coin2)
@@ -138,7 +137,7 @@ class ConvertService:
                     coin1, coin2 = coin2, coin1
                     if (
                         not db.query(models.CoinSet)
-                        .filter(models.CoinSet.sell_pair == coin1 + coin2)
+                        .filter(models.CoinSet.buy_pair == coin1 + coin2)
                         .first()
                     ):
                         return {"status": "you do not have coinSet"}
@@ -152,7 +151,7 @@ class ConvertService:
                     coin1, coin2 = coin2, coin1
                     if (
                         not db.query(models.CoinSet)
-                        .filter(models.CoinSet.buy_pair == coin1 + coin2)
+                        .filter(models.CoinSet.sell_pair == coin1 + coin2)
                         .first()
                     ):
                         return {"status": "you do not have coinSet"}
@@ -229,7 +228,14 @@ async def add_coinSet(req_body: CoinSet, db: _orm.Session):
     try:
         req_body.coin1 = req_body.coin1.upper()
         req_body.coin2 = req_body.coin2.upper()
-
+        if (
+            db.query(models.CoinSet)
+            .filter(models.CoinSet.buy_pair == req_body.coin1 + req_body.coin2)
+            .first()
+        ):
+            return JSONResponse(
+                status_code=status.HTTP_409_CONFLICT, content="already exist "
+            )
         coin = models.CoinSet(
             buy_pair=req_body.coin1 + req_body.coin2,
             sell_pair=req_body.coin2 + req_body.coin1,
