@@ -24,6 +24,10 @@ class Market(BaseModel):
     coin2: str
     price: float
     count: float
+    
+class DeletePanding(BaseModel):
+    coin_set: str
+    row: dict
 
 
 class CoinSet(BaseModel):

@@ -8,12 +8,10 @@ import asyncio_redis
 import sqlalchemy.orm as _orm
 
 from typing import List
-
-from apps.auth.service import get_user_by_id
 from apps.converter.repository import ConvertRepository, RedisRepository
-from apps.converter.schema import BuyCoin, CoinSet, Market, UpdateCoinSet
+from apps.converter.schema import BuyCoin, CoinSet, DeletePanding, Market, UpdateCoinSet
 from db import models
-from fastapi import BackgroundTasks, Depends, HTTPException, security, status
+from fastapi import status
 
 
 class ConvertService:
@@ -310,9 +308,32 @@ class RedisService:
         connection.keys()
         keys = connection.keys()
         res = {}
+
         for i in keys:
+
             res[i] = connection.get(i)
         return res
+
+    def get_user_all(self, id) -> List[dict]:
+
+        connection = self.connection
+        connection.keys()
+        keys = connection.keys()
+        res = {}
+        user_1_orders = []
+        for i in keys:
+            res[i] = json.loads(connection.get(i))
+            user_1_orders.append([order for order in res[i] if order["user_id"] == id])
+            res[i] = user_1_orders
+        return res
+
+    def delete_panding_limit(self, request: DeletePanding, id, service) -> List[dict]:
+        try:
+            status = service.delete_value(request.coin_set, request.row)
+            return {"status": status}
+        except Exception as e:
+            print(e)
+            return {"status": "fail"}
 
     def set_value(self, request: Market, buy: str, payload: dict) -> None:
         connection = self.connection

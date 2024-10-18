@@ -4,6 +4,7 @@ import redis
 from apps.converter.repository import ConvertRepository, RedisRepository
 from apps.converter.service import ConvertService, RedisService
 
+
 redis_repository = RedisRepository()
 convert_repository = ConvertRepository()
 

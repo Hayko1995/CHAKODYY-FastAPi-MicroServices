@@ -117,6 +117,7 @@ async def swagger_login(
 ) -> Any:
 
     try:
+        user_data.username =user_data.username.lower()
         emailinfo = validate_email(user_data.username, check_deliverability=False)
         email = emailinfo.normalized
 
@@ -157,6 +158,7 @@ async def generate_token(
 ):
 
     try:
+        user_data.username = user_data.username.lower()
         emailinfo = validate_email(user_data.username, check_deliverability=False)
         email = emailinfo.normalized
 

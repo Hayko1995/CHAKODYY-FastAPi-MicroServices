@@ -83,7 +83,7 @@ class Balance(database.Base):
     uuid = _sql.Column(
         UUID(as_uuid=True), default=uuid.uuid4, primary_key=True, index=True
     )
-    name = _sql.Column(_sql.String, nullable=False, unique=True)
+    name = _sql.Column(_sql.String, nullable=False, unique=False)
     count = _sql.Column(_sql.Float, nullable=False)
     user_id = _sql.Column(_sql.Integer, nullable=False)
 

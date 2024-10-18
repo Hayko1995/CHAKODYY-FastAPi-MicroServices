@@ -4,7 +4,6 @@ import os
 import websocket
 import websockets
 
-from apps.converter.service import ConvertService
 from depends import get_convert_service, get_redis_service
 import db.database as database
 import db.models as _models

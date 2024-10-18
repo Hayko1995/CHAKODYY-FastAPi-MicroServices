@@ -15,6 +15,7 @@ from apps.converter.schema import (
     Market,
     ReqBody,
     UpdateCoinSet,
+    DeletePanding
 )
 from apps.converter.service import ConvertService, RedisService
 from depends import get_convert_service, get_redis_service
@@ -187,7 +188,7 @@ def limit(
 
 
 @router.get(
-    "/pending-limit",
+    "/all-pending-limit",
     responses={400: {"description": "Bad request"}},
 )
 def get_panding(
@@ -196,6 +197,29 @@ def get_panding(
 ):
     return service.get_all(payload)
 
+@router.get(
+    "/pending-limit",
+    responses={400: {"description": "Bad request"}},
+)
+def get_user_panding(
+    service: RedisService = Depends(get_redis_service),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
+    return service.get_user_all(payload["id"])
+
+
+@router.delete(
+    "/pending-limit",
+    responses={400: {"description": "Bad request"}},
+)
+def delete_panding(
+    request: DeletePanding,
+    service: RedisService = Depends(get_redis_service),
+    payload: dict = fastapi.Depends(jwt_validation),
+    
+):
+    return service.delete_panding_limit(request, payload["id"], service)
+                          
 
 @router.get(
     "/coinset",
