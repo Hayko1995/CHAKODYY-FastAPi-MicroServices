@@ -10,13 +10,7 @@ from urllib import response
 
 from apps.auth.router import jwt_validation
 from apps.converter import service
-from apps.converter.schema import (
-    CoinSet,
-    Market,
-    ReqBody,
-    UpdateCoinSet,
-    DeletePanding
-)
+from apps.converter.schema import CoinSet, Market, ReqBody, UpdateCoinSet, DeletePanding
 from apps.converter.service import ConvertService, RedisService
 from depends import get_convert_service, get_redis_service
 
@@ -174,17 +168,24 @@ async def get_balance(
     "/limit",
     responses={400: {"description": "Bad request"}},
 )
-def limit(
+def set_limit(
     request: Market,
-    service: RedisService = Depends(get_redis_service),
+    redis_service: RedisService = Depends(get_redis_service),
+    service: ConvertService = Depends(get_convert_service),
     payload: dict = fastapi.Depends(jwt_validation),
+    db: _orm.Session = Depends(database.get_db),
 ):
     if request.buy:
         transaction_type = "buy"
     else:
         transaction_type = "sell"
-    service.set_value(request, transaction_type, payload)
-    return {"status": "success"}
+    return service.limit(
+        req_body=request,
+        payload=payload,
+        db=db,
+        redis_service=redis_service,
+        transaction_type=transaction_type,
+    )
 
 
 @router.get(
@@ -196,6 +197,7 @@ def get_panding(
     payload: dict = fastapi.Depends(jwt_validation),
 ):
     return service.get_all(payload)
+
 
 @router.get(
     "/pending-limit",
@@ -216,10 +218,31 @@ def delete_panding(
     request: DeletePanding,
     service: RedisService = Depends(get_redis_service),
     payload: dict = fastapi.Depends(jwt_validation),
-    
+    db: _orm.Session = Depends(database.get_db),
 ):
-    return service.delete_panding_limit(request, payload["id"], service)
-                          
+    return service.delete_panding_limit(request, payload["id"], service, db)
+
+
+@router.get(
+    "/get_panding_transactions_db",
+    responses={400: {"description": "Bad request"}},
+)
+async def get_panding_transactions_db(
+    db: _orm.Session = Depends(database.get_db),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
+    return await service.get_panding_transactions_db(payload["id"], db)
+
+@router.get(
+    "/get_archived_transactions",
+    responses={400: {"description": "Bad request"}},
+)
+async def get_archived_transactions(
+    db: _orm.Session = Depends(database.get_db),
+    payload: dict = fastapi.Depends(jwt_validation),
+):
+    return await service.get_archived(payload["id"], db)
+
 
 @router.get(
     "/coinset",

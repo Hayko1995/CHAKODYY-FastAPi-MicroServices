@@ -4,11 +4,9 @@ from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
 from apps.converter.repository import ConvertRepository, RedisRepository
-import asyncio_redis
 import sqlalchemy.orm as _orm
 
 from typing import List
-from apps.converter.repository import ConvertRepository, RedisRepository
 from apps.converter.schema import BuyCoin, CoinSet, DeletePanding, Market, UpdateCoinSet
 from db import models
 from fastapi import status
@@ -18,9 +16,16 @@ class ConvertService:
     def __init__(self, repository: ConvertRepository) -> None:
         self.repository = repository
 
-    def limit(self, req_body: Market, payload, db: _orm.Session):
-        from_coin = req_body.coin1.upper()
-        to_coin = req_body.coin2.upper()
+    def limit(
+        self,
+        req_body: Market,
+        payload,
+        db: _orm.Session,
+        redis_service,
+        transaction_type,
+    ):
+        coin1 = req_body.coin1.upper()
+        coin2 = req_body.coin2.upper()
 
         if req_body.buy:
 
@@ -52,11 +57,11 @@ class ConvertService:
                     return {"status": "you don't have coinSet"}
 
         try:
-            from_coin = self.repository.get_coin(payload["id"], from_coin, db=db)
+            from_coin = self.repository.get_coin(payload["id"], coin1, db=db)
             if from_coin == None:
                 return {"status": " not found from coin "}
 
-            to_coin = self.repository.get_coin(payload["id"], to_coin, db=db)
+            to_coin = self.repository.get_coin(payload["id"], coin2, db=db)
 
             if to_coin == None:
                 return {"status": "not found to  coin "}
@@ -88,6 +93,7 @@ class ConvertService:
             )
             db.add(order)
             db.commit()
+            redis_service.set_value(req_body, transaction_type, payload)
             return req_body
         except Exception as e:
             print(e)
@@ -249,6 +255,18 @@ async def add_coinSet(req_body: CoinSet, db: _orm.Session):
     )
 
 
+async def get_archived(id, db: _orm.Session) -> List[dict]:
+    try:
+        return (
+            db.query(models.OrderArchived)
+            .filter(models.OrderArchived.user_id == id)
+            .all()
+        )
+    except Exception as e:
+        print(e)
+        return {"status": "server error"}
+
+
 async def update_coinSet(req_body: UpdateCoinSet, db: _orm.Session):
     try:
         req_body.coin1 = req_body.coin1.upper()
@@ -283,6 +301,18 @@ async def delete_coinSet(id: int, db: _orm.Session):
 async def get_balance(id, db: _orm.Session):
     try:
         return db.query(models.Balance).filter(models.Balance.user_id == id).all()
+    except Exception as e:
+        print(e)
+        return False
+
+
+async def get_panding_transactions_db(id, db: _orm.Session):
+    try:
+        return (
+            db.query(models.OrderPending)
+            .filter(models.OrderPending.user_id == id)
+            .all()
+        )
     except Exception as e:
         print(e)
         return False
@@ -327,10 +357,45 @@ class RedisService:
             res[i] = user_1_orders
         return res
 
-    def delete_panding_limit(self, request: DeletePanding, id, service) -> List[dict]:
+    def delete_panding_limit(
+        self, request: DeletePanding, id, service, db: _orm.Session
+    ) -> List[dict]:
         try:
-            status = service.delete_value(request.coin_set, request.row)
+            row = {
+                "price": request.row["price"],
+                "user_id": id,
+                "order_direction": request.row["order_direction"],
+                "coin_set": request.coin_set,
+                "from_coin": request.row["from_coin"],
+                "to_coin": request.row["to_coin"],
+                "order_quantity": request.row["order_quantity"],
+            }
+
+            status = service.delete_value(request.coin_set, row)
+            if status:
+                aa = db.query(models.OrderPending).filter(
+                    models.OrderPending.from_coin == request.row["from_coin"],
+                    models.OrderPending.to_coin == request.row["to_coin"],
+                    models.OrderPending.order_direction
+                    == request.row["order_direction"],
+                    models.OrderPending.user_id == id,
+                ).delete()
+                
+                order = models.OrderArchived(
+                    order_type="deleted",
+                    order_direction=request.row["order_direction"],
+                    from_coin=request.row["from_coin"],
+                    to_coin=request.row["to_coin"],
+                    order_quantity=request.row["order_quantity"],
+                    price=request.row["price"],
+                    order_status=True,
+                    user_id=id,
+                    contest_id=0,
+                )
+                db.add(order)
+                db.commit()
             return {"status": status}
+
         except Exception as e:
             print(e)
             return {"status": "fail"}
@@ -372,10 +437,9 @@ class RedisService:
             connection = self.connection
             values = connection.get(key)
             values = json.loads(values)
+            if row in values:
+                values.remove(row)
 
-            # values.index(row)
-
-            del values[values.index(row)]
             self.set_full_key(key, values)
             return True
         except Exception as e:
