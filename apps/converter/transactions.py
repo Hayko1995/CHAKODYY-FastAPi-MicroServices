@@ -51,18 +51,19 @@ class Transaction(ABC):
                     if float(row["price"]) < float(ticker["c"]):
 
                         self.delete_rows_from_redis(coin, row)
+
+
                         market = Market(
                             buy=True,
                             coin1=row["from_coin"],
                             coin2=row["to_coin"],
                             price=row["price"],
                             count=row["order_quantity"],
+                            transaction_id=row["transaction_id"],
                         )
                         res = service.market(
                             market, id=row["user_id"], db=database.SessionLocal()
                         )
-
-                        print(res)
                 else:
                     if float(row["price"]) > float(ticker["c"]):
                         self.delete_row(order_id=row.order_id)
@@ -72,9 +73,10 @@ class Transaction(ABC):
                             coin2=row["to_coin"],
                             price=row["price"],
                             count=row["order_quantity"],
+                            transaction_id=row["transaction_id"],
                         )
                         res = service.market(market, id=id, db=database.SessionLocal())
-                        print(res)
+                return res
 
     async def binance_ws(self):
         url = "wss://stream.binance.com:9443/ws/!ticker@arr"

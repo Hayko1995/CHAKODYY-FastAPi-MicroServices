@@ -7,7 +7,7 @@ from apps.converter.repository import ConvertRepository, RedisRepository
 import sqlalchemy.orm as _orm
 
 from typing import List
-from apps.converter.schema import BuyCoin, CoinSet, DeletePanding, Market, UpdateCoinSet
+from apps.converter.schema import BuyCoin, CoinSet, Market, UpdateCoinSet
 from db import models
 from fastapi import status
 
@@ -34,12 +34,14 @@ class ConvertService:
                 .filter(models.CoinSet.buy_pair == coin1 + coin2)
                 .first()
             ):
+                print(coin1+coin2)
                 coin1, coin2 = coin2, coin1
                 if (
                     not db.query(models.CoinSet)
-                    .filter(models.CoinSet.sell_pair == coin1 + coin2)
+                    .filter(models.CoinSet.buy_pair == coin1 + coin2)
                     .first()
                 ):
+                    print(coin1+coin2)
                     return {"status": "you don't have coinSet"}
 
         else:
@@ -51,7 +53,7 @@ class ConvertService:
                 coin1, coin2 = coin2, coin1
                 if (
                     not db.query(models.CoinSet)
-                    .filter(models.CoinSet.buy_pair == coin1 + coin2)
+                    .filter(models.CoinSet.sell_pair == coin1 + coin2)
                     .first()
                 ):
                     return {"status": "you don't have coinSet"}
@@ -75,6 +77,8 @@ class ConvertService:
                 .first()
                 .contest_id
             )
+            if not contest_id:
+                return {"status": "not found contest id"}
             if req_body.buy:
                 order_direction = "buy"
             else:
@@ -93,6 +97,8 @@ class ConvertService:
             )
             db.add(order)
             db.commit()
+            db.refresh(order)
+            req_body.transaction_id = str(order.order_id)
             redis_service.set_value(req_body, transaction_type, payload)
             return req_body
         except Exception as e:
@@ -160,6 +166,10 @@ class ConvertService:
                     ):
                         return {"status": "you do not have coinSet"}
 
+            if not req_body.transaction_id == "":
+                db.query(models.OrderPending).filter(
+                    models.OrderPending.order_id == req_body.transaction_id
+                ).delete()
             coin1 = self.repository.get_coin(id, coin1, db=db)
 
             if coin1 == None:
@@ -358,41 +368,42 @@ class RedisService:
         return res
 
     def delete_panding_limit(
-        self, request: DeletePanding, id, service, db: _orm.Session
+        self, transaction_id: str, id, service, db: _orm.Session
     ) -> List[dict]:
         try:
-            row = {
-                "price": request.row["price"],
-                "user_id": id,
-                "order_direction": request.row["order_direction"],
-                "coin_set": request.coin_set,
-                "from_coin": request.row["from_coin"],
-                "to_coin": request.row["to_coin"],
-                "order_quantity": request.row["order_quantity"],
-            }
 
-            status = service.delete_value(request.coin_set, row)
+            order = (
+                db.query(models.OrderPending)
+                .filter(models.OrderPending.order_id == transaction_id)
+                .first()
+            )
+
+            status = service.delete_value(
+                order.from_coin + order.to_coin, transaction_id
+            )
             if status:
-                aa = db.query(models.OrderPending).filter(
-                    models.OrderPending.from_coin == request.row["from_coin"],
-                    models.OrderPending.to_coin == request.row["to_coin"],
-                    models.OrderPending.order_direction
-                    == request.row["order_direction"],
-                    models.OrderPending.user_id == id,
-                ).delete()
-                
+                item = (
+                    db.query(models.OrderPending)
+                    .filter(models.OrderPending.order_id == transaction_id)
+                    .first()
+                )
+
                 order = models.OrderArchived(
                     order_type="deleted",
-                    order_direction=request.row["order_direction"],
-                    from_coin=request.row["from_coin"],
-                    to_coin=request.row["to_coin"],
-                    order_quantity=request.row["order_quantity"],
-                    price=request.row["price"],
+                    order_direction=item.order_direction,
+                    from_coin=item.from_coin,
+                    to_coin=item.to_coin,
+                    order_quantity=item.order_quantity,
+                    price=item.price,
                     order_status=True,
                     user_id=id,
                     contest_id=0,
                 )
                 db.add(order)
+                db.commit()
+                db.query(models.OrderPending).filter(
+                    models.OrderPending.order_id == transaction_id
+                ).delete()
                 db.commit()
             return {"status": status}
 
@@ -411,6 +422,7 @@ class RedisService:
         limit["order_direction"] = buy
 
         item = {
+            "transaction_id": request.transaction_id,
             "price": float(request.price),
             "user_id": payload["id"],
             "order_direction": buy,
@@ -432,15 +444,14 @@ class RedisService:
         connection = self.connection
         connection.set(str(key), json.dumps(value))
 
-    def delete_value(self, key, row) -> None:
+    def delete_value(self, key, id) -> None:
         try:
             connection = self.connection
             values = connection.get(key)
             values = json.loads(values)
-            if row in values:
-                values.remove(row)
 
-            self.set_full_key(key, values)
+            transactions = [tx for tx in values if tx["transaction_id"] != id]
+            self.set_full_key(key, transactions)
             return True
         except Exception as e:
             print(e)

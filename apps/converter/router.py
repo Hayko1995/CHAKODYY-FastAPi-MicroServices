@@ -10,7 +10,7 @@ from urllib import response
 
 from apps.auth.router import jwt_validation
 from apps.converter import service
-from apps.converter.schema import CoinSet, Market, ReqBody, UpdateCoinSet, DeletePanding
+from apps.converter.schema import CoinSet, Market, ReqBody, UpdateCoinSet
 from apps.converter.service import ConvertService, RedisService
 from depends import get_convert_service, get_redis_service
 
@@ -200,7 +200,7 @@ def get_panding(
 
 
 @router.get(
-    "/pending-limit",
+    "/pending-limit_redis",
     responses={400: {"description": "Bad request"}},
 )
 def get_user_panding(
@@ -215,16 +215,16 @@ def get_user_panding(
     responses={400: {"description": "Bad request"}},
 )
 def delete_panding(
-    request: DeletePanding,
+    transaction_id,
     service: RedisService = Depends(get_redis_service),
     payload: dict = fastapi.Depends(jwt_validation),
     db: _orm.Session = Depends(database.get_db),
 ):
-    return service.delete_panding_limit(request, payload["id"], service, db)
+    return service.delete_panding_limit(transaction_id, payload["id"], service, db)
 
 
 @router.get(
-    "/get_panding_transactions_db",
+    "/panding_limit",
     responses={400: {"description": "Bad request"}},
 )
 async def get_panding_transactions_db(
@@ -232,6 +232,7 @@ async def get_panding_transactions_db(
     payload: dict = fastapi.Depends(jwt_validation),
 ):
     return await service.get_panding_transactions_db(payload["id"], db)
+
 
 @router.get(
     "/get_archived_transactions",

@@ -1,3 +1,4 @@
+from typing import Optional
 import uuid
 
 from datetime import datetime
@@ -24,20 +25,19 @@ class Market(BaseModel):
     coin2: str
     price: float
     count: float
-    
-class DeletePanding(BaseModel):
-    coin_set: str
-    row: dict
+    transaction_id: Optional[str] = ''
 
 
 class CoinSet(BaseModel):
     coin1: str
     coin2: str
 
+
 class UpdateCoinSet(BaseModel):
     id: int
     coin1: str
     coin2: str
+
 
 class ConvertRequest(BaseModel):
     from_coin: str
