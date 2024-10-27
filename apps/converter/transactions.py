@@ -42,16 +42,34 @@ class Transaction(ABC):
         db.commit()
         return coin_sets
 
+    def init_coin_set(self, coin_set_arr):
+        try:
+            db = database.SessionLocal()
+            for coin_set in coin_set_arr:
+                if coin_set["s"]:
+                    coin_set = coin_set["s"]
+                    coin = (
+                        db.query(_models.CoinSet)
+                        .filter(_models.CoinSet.coin_set == coin_set)
+                        .first()
+                    )
+                    if not coin:
+                        new_coin_set = _models.CoinSet(coin_set=coin_set)
+                        db.add(new_coin_set)
+                        db.commit()
+        except Exception as e:
+            print(e)
+
     def process(self, coin, ticker):
         service = get_convert_service()
         rows = self.get_rows_from_redis(coin)
         if rows:
+
             for row in json.loads(rows):
                 if row["order_direction"] == "buy":
                     if float(row["price"]) < float(ticker["c"]):
 
                         self.delete_rows_from_redis(coin, row)
-
 
                         market = Market(
                             buy=True,
@@ -82,6 +100,11 @@ class Transaction(ABC):
         url = "wss://stream.binance.com:9443/ws/!ticker@arr"
 
         async with websockets.connect(url) as ws:
+            await asyncio.sleep(1)
+            data = await ws.recv()
+            data_json = json.loads(data)
+            self.init_coin_set(data_json)
+
             while True:
                 await asyncio.sleep(1)
                 data = await ws.recv()
