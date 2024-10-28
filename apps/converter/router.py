@@ -175,16 +175,11 @@ def set_limit(
     payload: dict = fastapi.Depends(jwt_validation),
     db: _orm.Session = Depends(database.get_db),
 ):
-    if request.buy:
-        transaction_type = "buy"
-    else:
-        transaction_type = "sell"
     return service.limit(
         req_body=request,
         payload=payload,
         db=db,
         redis_service=redis_service,
-        transaction_type=transaction_type,
     )
 
 

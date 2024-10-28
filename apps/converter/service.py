@@ -22,41 +22,24 @@ class ConvertService:
         payload,
         db: _orm.Session,
         redis_service,
-        transaction_type,
     ):
         coin1 = req_body.coin1.upper()
         coin2 = req_body.coin2.upper()
 
-        if req_body.buy:
+           
 
+        if (
+            not db.query(models.CoinSet)
+            .filter(models.CoinSet.coin_set == coin1 + coin2)
+            .first()
+        ):
+            coin1, coin2 = coin2, coin1
             if (
                 not db.query(models.CoinSet)
-                .filter(models.CoinSet.buy_pair == coin1 + coin2)
+                .filter(models.CoinSet.coin_set == coin1 + coin2)
                 .first()
             ):
-                print(coin1+coin2)
-                coin1, coin2 = coin2, coin1
-                if (
-                    not db.query(models.CoinSet)
-                    .filter(models.CoinSet.buy_pair == coin1 + coin2)
-                    .first()
-                ):
-                    print(coin1+coin2)
-                    return {"status": "you don't have coinSet"}
-
-        else:
-            if (
-                not db.query(models.CoinSet)
-                .filter(models.CoinSet.sell_pair == coin1 + coin2)
-                .first()
-            ):
-                coin1, coin2 = coin2, coin1
-                if (
-                    not db.query(models.CoinSet)
-                    .filter(models.CoinSet.sell_pair == coin1 + coin2)
-                    .first()
-                ):
-                    return {"status": "you don't have coinSet"}
+                return {"status": "you do not have coinSet"}
 
         try:
             from_coin = self.repository.get_coin(payload["id"], coin1, db=db)
@@ -80,15 +63,17 @@ class ConvertService:
             if not contest_id:
                 return {"status": "not found contest id"}
             if req_body.buy:
+                print("///////////////buy")
                 order_direction = "buy"
             else:
+                print("///////////////sell")
                 order_direction = "sell"
 
             order = models.OrderPending(
                 order_type="limit",
                 order_direction=order_direction,
-                from_coin=req_body.coin1,
-                to_coin=req_body.coin2,
+                from_coin=coin1,
+                to_coin=coin2,
                 order_quantity=req_body.count,
                 price=req_body.price,
                 order_status=True,
@@ -99,7 +84,9 @@ class ConvertService:
             db.commit()
             db.refresh(order)
             req_body.transaction_id = str(order.order_id)
-            redis_service.set_value(req_body, transaction_type, payload)
+            req_body.coin1 = coin1
+            req_body.coin2 = coin2
+            redis_service.set_value(req_body, order_direction, payload)
             return req_body
         except Exception as e:
             print(e)
@@ -138,56 +125,47 @@ class ConvertService:
             coin1 = req_body.coin1.upper()
             coin2 = req_body.coin2.upper()
 
-            if req_body.buy:
+            if (
+                not db.query(models.CoinSet)
+                .filter(models.CoinSet.coin_set == coin1 + coin2)
+                .first()
+            ):
+                coin1, coin2 = coin2, coin1
                 if (
                     not db.query(models.CoinSet)
-                    .filter(models.CoinSet.buy_pair == coin1 + coin2)
+                    .filter(models.CoinSet.coin_set == coin1 + coin2)
                     .first()
                 ):
-                    coin1, coin2 = coin2, coin1
-                    if (
-                        not db.query(models.CoinSet)
-                        .filter(models.CoinSet.buy_pair == coin1 + coin2)
-                        .first()
-                    ):
-                        return {"status": "you do not have coinSet"}
-
-            else:
-                if (
-                    not db.query(models.CoinSet)
-                    .filter(models.CoinSet.sell_pair == coin1 + coin2)
-                    .first()
-                ):
-                    coin1, coin2 = coin2, coin1
-                    if (
-                        not db.query(models.CoinSet)
-                        .filter(models.CoinSet.sell_pair == coin1 + coin2)
-                        .first()
-                    ):
-                        return {"status": "you do not have coinSet"}
+                    return {"status": "you do not have coinSet"}
 
             if not req_body.transaction_id == "":
                 db.query(models.OrderPending).filter(
                     models.OrderPending.order_id == req_body.transaction_id
                 ).delete()
-            coin1 = self.repository.get_coin(id, coin1, db=db)
 
+            coin1 = self.repository.get_coin(id, coin1, db=db)
             if coin1 == None:
                 return {"status": "not found from coin "}
 
             coin2 = self.repository.get_coin(id, coin2, db=db)
-
             if coin2 == None:
                 return {"status": "not found to coin "}
 
             if float(coin1.count) < float(req_body.count):
                 return {"status": "not enough coins"}
 
-            coin2.count = float(
-                float(coin2.count) + float(req_body.count) * float(req_body.price)
-            )
-            coin2.count = round(coin2.count, 5)
-            coin1.count = float(coin1.count) - float(req_body.count)
+            if req_body.buy:
+                coin2.count = float(
+                    float(coin2.count) + float(req_body.count) * float(req_body.price)
+                )
+                coin2.count = round(coin2.count, 5)
+                coin1.count = float(coin1.count) - float(req_body.count)
+            else:
+                coin1.count = float(
+                    float(coin1.count) + float(req_body.count) * float(req_body.price)
+                )
+                coin1.count = round(coin1.count, 5)
+                coin2.count = float(coin2.count) - float(req_body.count)
             contest = (
                 db.query(models.ContestParticipant)
                 .filter(models.ContestParticipant.participant == id)
@@ -411,7 +389,7 @@ class RedisService:
             print(e)
             return {"status": "fail"}
 
-    def set_value(self, request: Market, buy: str, payload: dict) -> None:
+    def set_value(self, request: Market, order_direction: str, payload: dict) -> None:
         connection = self.connection
         coin_set = request.coin1 + request.coin2
         limit = {}
@@ -419,26 +397,27 @@ class RedisService:
         limit["coin_set"] = request.coin1 + request.coin2
         limit["price"] = float(request.price)
         limit["count"] = request.count
-        limit["order_direction"] = buy
+        limit["order_direction"] = order_direction
 
         item = {
             "transaction_id": request.transaction_id,
             "price": float(request.price),
             "user_id": payload["id"],
-            "order_direction": buy,
+            "order_direction": order_direction,
             "coin_set": request.coin1 + request.coin2,
             "from_coin": request.coin1,
             "to_coin": request.coin2,
             "order_quantity": request.count,
         }
+        
         redis_value = connection.get(coin_set)
         if redis_value == None:
             return connection.set(coin_set, json.dumps([item]))
         redis_value = json.loads(redis_value)
         if item not in redis_value:
             redis_value.append(item)
-
         return connection.set(coin_set, json.dumps(redis_value))
+        
 
     def set_full_key(self, key, value):
         connection = self.connection
@@ -449,7 +428,6 @@ class RedisService:
             connection = self.connection
             values = connection.get(key)
             values = json.loads(values)
-
             transactions = [tx for tx in values if tx["transaction_id"] != id]
             self.set_full_key(key, transactions)
             return True

@@ -27,9 +27,9 @@ class Transaction(ABC):
         rows = redis.get_value(coin_set)
         return rows
 
-    def delete_rows_from_redis(self, key, row):
+    def delete_rows_from_redis(self, key, transaction_id):
         redis = get_redis_service()
-        status = redis.delete_value(key, row)
+        status = redis.delete_value(key, transaction_id)
         return status
 
     def delete_row(self, order_id: str):
@@ -63,14 +63,13 @@ class Transaction(ABC):
     def process(self, coin, ticker):
         service = get_convert_service()
         rows = self.get_rows_from_redis(coin)
+        res = ""
         if rows:
-
             for row in json.loads(rows):
                 if row["order_direction"] == "buy":
                     if float(row["price"]) < float(ticker["c"]):
-
-                        self.delete_rows_from_redis(coin, row)
-
+                        self.delete_row(order_id=row["transaction_id"])
+                        self.delete_rows_from_redis(coin, row["transaction_id"])
                         market = Market(
                             buy=True,
                             coin1=row["from_coin"],
@@ -84,7 +83,12 @@ class Transaction(ABC):
                         )
                 else:
                     if float(row["price"]) > float(ticker["c"]):
-                        self.delete_row(order_id=row.order_id)
+                        print(
+                            "🐍 File: converter/transactions.py | Line: 70 | process ~ row",
+                            row,
+                        )
+                        self.delete_rows_from_redis(coin, row["transaction_id"])
+                        self.delete_row(order_id=row["transaction_id"])
                         market = Market(
                             buy=False,
                             coin1=row["from_coin"],
@@ -93,8 +97,10 @@ class Transaction(ABC):
                             count=row["order_quantity"],
                             transaction_id=row["transaction_id"],
                         )
-                        res = service.market(market, id=id, db=database.SessionLocal())
-                return res
+                        res = service.market(
+                            market, id=row["user_id"], db=database.SessionLocal()
+                        )
+        return res
 
     async def binance_ws(self):
         url = "wss://stream.binance.com:9443/ws/!ticker@arr"
